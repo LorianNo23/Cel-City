@@ -84,3 +84,5 @@ Der naechste sinnvolle Schritt nach diesem Branch ist `feature/save-system`: pla
 - importierte Baum-Modelle fuer Waelder
 
 Diese Details sind bewusst temporaer. Spaeter koennen echte Low-Poly-Felsen, bessere Gras-Assets und Ufer-Meshes in `ServerStorage` importiert und von `TerrainService` statt der Platzhalter genutzt werden.
+
+Beim Serverstart loggt `TerrainService` jeden Generierungsschritt im Output. `Workspace/GeneratedMap` wird vor jeder Neugenerierung geleert, damit alte Wald- oder Deko-Objekte nicht mehrfach liegen bleiben.
