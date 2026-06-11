@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local Buildings = require(ReplicatedStorage.Shared.Config.Buildings)
 local Grid = require(ReplicatedStorage.Shared.Util.Grid)
+local EconomyService = require(script.Parent:WaitForChild("EconomyService"))
 local TerrainService = require(script.Parent:WaitForChild("TerrainService"))
 
 local PlacementService = {}
@@ -317,7 +318,13 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 		return
 	end
 
-	-- TODO: Economy Check - verify price before placement once the economy loop is ready.
+	local cost = buildingConfig.Cost or 0
+	if not EconomyService.CanAfford(player, cost) then
+		warn("[PlacementService]", player.Name, "cannot afford", buildingId, "cost:", cost)
+		sendPlacementResult(player, false, "NotEnoughMoney", occupiedByBuilding)
+		return
+	end
+
 	-- TODO: Save System - persist placed buildings after DataStore support exists.
 
 	local flatCenterWorld = getBuildingCenterWorld(origin, buildingConfig.Size, requestedRotation, requestedPosition.Y)
@@ -326,6 +333,7 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, requestedRotation)
 	buildingInstance.Parent = placedBuildingsFolder
 	markCellsOccupied(occupiedByBuilding)
+	EconomyService.Spend(player, cost)
 	sendPlacementResult(player, true, "Placed", occupiedByBuilding)
 
 	print(

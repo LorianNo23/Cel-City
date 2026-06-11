@@ -12,19 +12,19 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - Server validiert Placement authoritative.
 - Server erstellt aktuell Placeholder-Gebaeude.
 
-## Naechster Branch: `feature/economy`
+## Abgeschlossen in `feature/economy`
 
-- [ ] `EconomyService` an `PlacementService` anbinden.
-- [ ] Startgeld pro Spieler setzen, z.B. `1000`.
-- [ ] `Buildings[buildingId].Cost` serverseitig pruefen.
-- [ ] Geld nur bei erfolgreicher Platzierung abziehen.
-- [ ] `PlacementResult` um `NotEnoughMoney` erweitern.
-- [ ] Preview rot faerben, wenn Server wegen fehlendem Geld ablehnt.
-- [ ] Minimalen Geldstand sichtbar machen, z.B. ueber `leaderstats`.
-- [ ] Keine finale UI bauen.
-- [ ] Kein DataStore einbauen.
+- [x] `EconomyService` an `PlacementService` anbinden.
+- [x] Startgeld pro Spieler setzen, z.B. `1000`.
+- [x] `Buildings[buildingId].Cost` serverseitig pruefen.
+- [x] Geld nur bei erfolgreicher Platzierung abziehen.
+- [x] `PlacementResult` um `NotEnoughMoney` erweitern.
+- [x] Preview rot faerben, wenn Server wegen fehlendem Geld ablehnt.
+- [x] Minimalen Geldstand sichtbar machen, z.B. ueber `leaderstats`.
+- [x] Keine finale UI bauen.
+- [x] Kein DataStore einbauen.
 
-## Danach: `feature/save-system`
+## Naechster Branch: `feature/save-system`
 
 - [ ] Datenmodell fuer platzierte Gebaeude definieren.
 - [ ] Pro Gebaeude speichern: `BuildingId`, Grid-Origin, Rotation.

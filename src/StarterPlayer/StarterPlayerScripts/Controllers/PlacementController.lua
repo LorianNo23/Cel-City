@@ -30,6 +30,8 @@ local currentRotation = 0
 local currentOrigin: Vector2?
 local currentRequestPosition: Vector3?
 local knownOccupiedCells: { [string]: boolean } = {}
+local lastFailureReason: string?
+local lastFailureCells: { [string]: boolean } = {}
 
 local PREVIEW_HEIGHT = 6
 local FALLBACK_PLACE_DISTANCE = 16
@@ -171,6 +173,29 @@ local function rememberOccupiedCellKeys(cellKeys: { string })
 	end
 end
 
+local function rememberLastFailure(reason: string?, cellKeys: { string }?)
+	lastFailureReason = reason
+	lastFailureCells = {}
+
+	for _, cellKey in cellKeys or {} do
+		lastFailureCells[cellKey] = true
+	end
+end
+
+local function doCellsMatchLastFailure(cells: { Vector2 }): boolean
+	if not lastFailureReason then
+		return false
+	end
+
+	for _, cell in cells do
+		if lastFailureCells[Grid.cellKey(cell)] then
+			return true
+		end
+	end
+
+	return false
+end
+
 local function setPreviewVisible(isVisible: boolean)
 	if previewPart then
 		previewPart.Transparency = if isVisible then PREVIEW_TRANSPARENCY else 1
@@ -197,6 +222,7 @@ local function updatePreview()
 	local isInsideBounds = Grid.areCellsInsideBounds(cells)
 	local isKnownFree = areCellsKnownFree(cells)
 	local isDryLand = areCellsOnDryLand(cells)
+	local matchesLastFailure = doCellsMatchLastFailure(cells)
 	local footprintSize = Grid.getFootprintSize(buildingConfig.Size, currentRotation)
 	local flatCenter = getPreviewCenterWorld(origin, buildingConfig.Size, currentRotation, pointedPosition.Y)
 	local groundY = getGroundYAtPosition(flatCenter)
@@ -209,7 +235,7 @@ local function updatePreview()
 	)
 	previewPart.CFrame = CFrame.new(centerWorld + Vector3.new(0, PREVIEW_HEIGHT / 2, 0))
 		* CFrame.Angles(0, math.rad(currentRotation), 0)
-	previewPart.Color = if isInsideBounds and isKnownFree and isDryLand
+	previewPart.Color = if isInsideBounds and isKnownFree and isDryLand and not matchesLastFailure
 		then DEFAULT_PREVIEW_COLOR
 		else INVALID_PREVIEW_COLOR
 	previewOutline.Color3 = previewPart.Color
@@ -239,6 +265,9 @@ function PlacementController.Init()
 
 		if result.Success == true then
 			rememberOccupiedCellKeys(result.Cells or {})
+			rememberLastFailure(nil, nil)
+		else
+			rememberLastFailure(result.Reason, result.Cells or {})
 		end
 	end)
 

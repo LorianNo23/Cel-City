@@ -12,9 +12,38 @@ local EconomyService = {}
 local STARTING_MONEY = 1000
 local balances: { [Player]: number } = {}
 
+local function getOrCreateMoneyValue(player: Player): IntValue
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then
+		leaderstats = Instance.new("Folder")
+		leaderstats.Name = "leaderstats"
+		leaderstats.Parent = player
+	end
+
+	local money = leaderstats:FindFirstChild("Money")
+	if money and money:IsA("IntValue") then
+		return money
+	end
+
+	if money then
+		money:Destroy()
+	end
+
+	local newMoney = Instance.new("IntValue")
+	newMoney.Name = "Money"
+	newMoney.Parent = leaderstats
+
+	return newMoney
+end
+
+local function setBalance(player: Player, amount: number)
+	balances[player] = amount
+	getOrCreateMoneyValue(player).Value = amount
+end
+
 function EconomyService.Init()
 	Players.PlayerAdded:Connect(function(player)
-		balances[player] = STARTING_MONEY
+		setBalance(player, STARTING_MONEY)
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
@@ -22,7 +51,7 @@ function EconomyService.Init()
 	end)
 
 	for _, player in Players:GetPlayers() do
-		balances[player] = STARTING_MONEY
+		setBalance(player, STARTING_MONEY)
 	end
 end
 
@@ -39,7 +68,7 @@ function EconomyService.Spend(player: Player, amount: number): boolean
 		return false
 	end
 
-	balances[player] -= amount
+	setBalance(player, EconomyService.GetBalance(player) - amount)
 	return true
 end
 

@@ -27,12 +27,26 @@ Dieses Repo nutzt einen vereinfachten Git-Flow. Die Regeln stehen in `BRANCHES.m
 
 Im aktuellen Prototyp sieht der Spieler eine lokale Ghost Preview fuer ein `House`. Die Preview folgt der Maus, snappt auf das Grid und zeigt einfache Bounds-Gueltigkeit:
 
+- `B` schaltet den Build Mode ein oder aus.
 - `R` rotiert die Preview um 90 Grad.
-- `B` fragt beim Server an, das aktuell angezeigte `House` zu platzieren.
+- Linksklick fragt beim Server an, das aktuell angezeigte `House` zu platzieren.
 
-Der Client sendet nur `buildingId`, Position und Rotation. Der Server snappt/validiert erneut, prueft Bounds und belegte Zellen und erstellt ein einfaches Placeholder-Gebaeude in `Workspace/PlacedBuildings`, falls noch kein echtes Model existiert.
+Der Client sendet nur `buildingId`, Position und Rotation. Der Server snappt/validiert erneut, prueft Bounds, Wasser/Gravel, belegte Zellen und Kosten. Bei erfolgreicher Platzierung zieht der Server Geld ab und erstellt ein einfaches Placeholder-Gebaeude in `Workspace/PlacedBuildings`, falls noch kein echtes Model existiert.
 
-Es gibt noch keine finale UI, keine echten Gebaeude-Modelle, keinen Economy-Check und keinen DataStore. Diese Struktur ist bewusst klein gehalten, damit die naechsten Systeme sauber darauf aufbauen koennen.
+Es gibt noch keine finale UI, keine echten Gebaeude-Modelle und keinen DataStore. Diese Struktur ist bewusst klein gehalten, damit die naechsten Systeme sauber darauf aufbauen koennen.
+
+## Economy
+
+`EconomyService` verwaltet aktuell nur Session-Geld. Jeder Spieler startet mit `1000` Money. Der Geldstand ist ueber Roblox `leaderstats` sichtbar.
+
+Beim Platzieren prueft der Server `Buildings[buildingId].Cost`. Geld wird nur abgezogen, wenn alle Placement-Checks bestanden sind und das Gebaeude wirklich platziert wird. Wenn der Spieler nicht genug Geld hat, antwortet der Server mit `PlacementResult.Reason = "NotEnoughMoney"` und der Client faerbt die Preview rot.
+
+Noch nicht enthalten:
+
+- Kein DataStore.
+- Kein Einkommen pro Gebaeude.
+- Keine finale Money-UI.
+- Kein Balancing.
 
 ## Grid-System
 
@@ -57,4 +71,4 @@ Optionales Debug-Grid:
 3. Rojo synchronisieren lassen und Studio neu starten oder Play neu starten.
 4. Die Debug-Linien erscheinen in `Workspace/GridDebug`.
 
-Der naechste sinnvolle Schritt nach diesem Branch ist `feature/economy`: Preise serverseitig pruefen, Geld anzeigen und Platzierung bei zu wenig Geld ablehnen.
+Der naechste sinnvolle Schritt nach diesem Branch ist `feature/save-system`: platzierte Gebaeude, Rotation und Geldstand speichern und beim Join wiederherstellen.
