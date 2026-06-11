@@ -25,6 +25,7 @@ local placementResultRemote: RemoteEvent
 local previewPart: Part
 local previewOutline: SelectionBox
 local selectedBuildingId = "House"
+local isBuildMode = false
 local currentRotation = 0
 local currentOrigin: Vector2?
 local currentRequestPosition: Vector3?
@@ -64,8 +65,8 @@ local function getPointedWorldPosition(): Vector3?
 	return getFallbackPosition()
 end
 
-local function getGroundYAtPosition(position: Vector3): number
-	local rayOrigin = Vector3.new(position.X, 1000, position.Z)
+local function raycastGround(x: number, z: number): RaycastResult?
+	local rayOrigin = Vector3.new(x, 1000, z)
 	local rayDirection = Vector3.new(0, -2000, 0)
 	local raycastParams = RaycastParams.new()
 	local excludedInstances = {}
@@ -82,12 +83,36 @@ local function getGroundYAtPosition(position: Vector3): number
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	raycastParams.FilterDescendantsInstances = excludedInstances
 
-	local result = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+	return Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+end
+
+local function getGroundYAtPosition(position: Vector3): number
+	local result = raycastGround(position.X, position.Z)
 	if result then
 		return result.Position.Y
 	end
 
 	return 0
+end
+
+-- Local approximation of the server-side water check: the river, the streams,
+-- and their gravel banks are the only Water/Slate terrain on the map.
+local WATER_MATERIALS = {
+	[Enum.Material.Water] = true,
+	[Enum.Material.Slate] = true,
+}
+
+local function areCellsOnDryLand(cells: { Vector2 }): boolean
+	for _, cell in cells do
+		local world = Grid.gridToWorld(cell)
+		local result = raycastGround(world.X, world.Z)
+
+		if result and WATER_MATERIALS[result.Material] then
+			return false
+		end
+	end
+
+	return true
 end
 
 local function getPreviewCenterWorld(origin: Vector2, size: Vector2, rotation: number, y: number): Vector3
@@ -160,7 +185,7 @@ local function updatePreview()
 	local buildingConfig = Buildings[selectedBuildingId]
 	local pointedPosition = getPointedWorldPosition()
 
-	if not buildingConfig or not pointedPosition then
+	if not isBuildMode or not buildingConfig or not pointedPosition then
 		setPreviewVisible(false)
 		currentOrigin = nil
 		currentRequestPosition = nil
@@ -171,6 +196,7 @@ local function updatePreview()
 	local cells = Grid.getOccupiedCells(origin, buildingConfig.Size, currentRotation)
 	local isInsideBounds = Grid.areCellsInsideBounds(cells)
 	local isKnownFree = areCellsKnownFree(cells)
+	local isDryLand = areCellsOnDryLand(cells)
 	local footprintSize = Grid.getFootprintSize(buildingConfig.Size, currentRotation)
 	local flatCenter = getPreviewCenterWorld(origin, buildingConfig.Size, currentRotation, pointedPosition.Y)
 	local groundY = getGroundYAtPosition(flatCenter)
@@ -183,7 +209,9 @@ local function updatePreview()
 	)
 	previewPart.CFrame = CFrame.new(centerWorld + Vector3.new(0, PREVIEW_HEIGHT / 2, 0))
 		* CFrame.Angles(0, math.rad(currentRotation), 0)
-	previewPart.Color = if isInsideBounds and isKnownFree then DEFAULT_PREVIEW_COLOR else INVALID_PREVIEW_COLOR
+	previewPart.Color = if isInsideBounds and isKnownFree and isDryLand
+		then DEFAULT_PREVIEW_COLOR
+		else INVALID_PREVIEW_COLOR
 	previewOutline.Color3 = previewPart.Color
 
 	currentOrigin = origin
@@ -221,17 +249,38 @@ function PlacementController.Init()
 			return
 		end
 
+		if input.KeyCode == Enum.KeyCode.B then
+			PlacementController.SetBuildMode(not isBuildMode)
+			return
+		end
+
+		if not isBuildMode then
+			return
+		end
+
 		if input.KeyCode == Enum.KeyCode.R then
 			rotatePreview()
 			return
 		end
 
-		if input.KeyCode == Enum.KeyCode.B then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			PlacementController.RequestPlaceBuilding()
 		end
 	end)
 
-	print("[PlacementController] Preview created. Move mouse to preview, press R to rotate, B to place.")
+	print("[PlacementController] Press B to toggle build mode. In build mode: R rotates, left-click places.")
+end
+
+function PlacementController.SetBuildMode(enabled: boolean)
+	isBuildMode = enabled
+
+	if not isBuildMode then
+		setPreviewVisible(false)
+		currentOrigin = nil
+		currentRequestPosition = nil
+	end
+
+	print("[PlacementController] Build mode:", if isBuildMode then "ON" else "OFF")
 end
 
 function PlacementController.RequestPlaceBuilding()
