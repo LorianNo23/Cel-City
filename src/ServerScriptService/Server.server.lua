@@ -8,6 +8,7 @@ local Services = ServerScriptService:WaitForChild("Services")
 
 local EconomyService = require(Services:WaitForChild("EconomyService"))
 local PlacementService = require(Services:WaitForChild("PlacementService"))
+local TerrainService = require(Services:WaitForChild("TerrainService"))
 
 local function getOrCreateRemoteEvent(folder: Instance, remoteName: string): RemoteEvent
 	local remote = folder:FindFirstChild(remoteName)
@@ -41,6 +42,7 @@ end
 
 local placeBuildingRemote = getOrCreateRemoteEvent(remotes, "PlaceBuilding")
 
+TerrainService.Init()
 EconomyService.Init()
 PlacementService.Init(placeBuildingRemote)
 
