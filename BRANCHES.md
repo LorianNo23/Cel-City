@@ -54,7 +54,7 @@ Rules:
 - One branch = one feature.
 - Keep feature branches small.
 - Merge into develop when finished.
-- Delete feature branch after merge.
+- Keep feature branches after merging (do not delete them).
 
 ## Commit Convention
 
@@ -103,11 +103,7 @@ git checkout develop
 git merge feature/grid-system
 ```
 
-6. Delete branch:
-
-```bash
-git branch -d feature/grid-system
-```
+6. Keep the feature branch (do not delete it).
 
 7. When multiple features are tested:
 
