@@ -63,6 +63,12 @@ local CONFIG = {
 	ForestRadiusMax = 140,
 	ImportedTreeScaleMin = 39,
 	ImportedTreeScaleMax = 51,
+
+	-- Temporary stylized details until custom rock/grass meshes exist.
+	ShorePebbleStep = 18,
+	ShorePebbleChance = 0.45,
+	GrassTuftCount = 260,
+	GrassTuftMinDistanceFromPlateau = 24,
 }
 
 -- Forests are intentionally different on every server start, while the
@@ -75,8 +81,23 @@ local riverPathX: { [number]: number } = {}
 -- Carved stream sample points, used to keep trees out of the water.
 local streamPoints: { Vector2 } = {}
 
+local TERRAIN_COLORS = {
+	[Enum.Material.Grass] = Color3.fromRGB(94, 166, 82),
+	[Enum.Material.LeafyGrass] = Color3.fromRGB(64, 142, 75),
+	[Enum.Material.Ground] = Color3.fromRGB(123, 103, 71),
+	[Enum.Material.Rock] = Color3.fromRGB(92, 96, 98),
+	[Enum.Material.Slate] = Color3.fromRGB(118, 124, 124),
+	[Enum.Material.Water] = Color3.fromRGB(61, 132, 166),
+}
+
 local function totalHalfSize(): number
 	return CONFIG.PlateauHalfSize + CONFIG.BorderWidth
+end
+
+local function applyStylizedTerrainPalette(terrain: Terrain)
+	for material, color in TERRAIN_COLORS do
+		terrain:SetMaterialColor(material, color)
+	end
 end
 
 local function fractalNoise(x: number, z: number): number
@@ -525,6 +546,113 @@ local function createTree(position: Vector3): Instance
 	return clone
 end
 
+local function createPebble(position: Vector3): Part
+	local pebble = Instance.new("Part")
+	pebble.Name = "ShorePebble"
+	pebble.Anchored = true
+	pebble.CanCollide = false
+	pebble.Material = Enum.Material.SmoothPlastic
+	pebble.Color = Color3.fromRGB(
+		rng:NextInteger(105, 135),
+		rng:NextInteger(110, 135),
+		rng:NextInteger(108, 128)
+	)
+	pebble.Size = Vector3.new(
+		rng:NextNumber(1.8, 4.2),
+		rng:NextNumber(0.35, 1.0),
+		rng:NextNumber(1.6, 3.8)
+	)
+	pebble.CFrame = CFrame.new(position + Vector3.new(0, pebble.Size.Y / 2, 0))
+		* CFrame.Angles(
+			math.rad(rng:NextNumber(-6, 6)),
+			rng:NextNumber(0, math.pi * 2),
+			math.rad(rng:NextNumber(-6, 6))
+		)
+
+	return pebble
+end
+
+local function createGrassTuft(position: Vector3): Model
+	local tuft = Instance.new("Model")
+	tuft.Name = "GrassTuft"
+
+	local bladeCount = rng:NextInteger(3, 5)
+	for _ = 1, bladeCount do
+		local blade = Instance.new("Part")
+		blade.Name = "Blade"
+		blade.Anchored = true
+		blade.CanCollide = false
+		blade.Material = Enum.Material.SmoothPlastic
+		blade.Color = Color3.fromRGB(58, rng:NextInteger(135, 165), 66)
+		blade.Size = Vector3.new(0.22, rng:NextNumber(2.0, 3.8), 0.22)
+
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * rng:NextNumber(0, 0.7)
+		blade.CFrame = CFrame.new(position + offset + Vector3.new(0, blade.Size.Y / 2, 0))
+			* CFrame.Angles(math.rad(rng:NextNumber(-16, 16)), angle, math.rad(rng:NextNumber(-16, 16)))
+		blade.Parent = tuft
+	end
+
+	return tuft
+end
+
+local function spawnShorePebbles(detailsFolder: Folder)
+	local half = totalHalfSize()
+
+	for z = -half, half, CONFIG.ShorePebbleStep do
+		if rng:NextNumber() > CONFIG.ShorePebbleChance then
+			continue
+		end
+
+		local riverX = TerrainService.GetRiverXAt(z)
+		local side = if rng:NextNumber() < 0.5 then -1 else 1
+		local distanceFromRiver = CONFIG.RiverHalfWidth + rng:NextNumber(2, CONFIG.RiverBankWidth + 3)
+		local x = riverX + side * distanceFromRiver
+		local y = groundHeightAt(x, z)
+
+		createPebble(Vector3.new(x, y, z)).Parent = detailsFolder
+	end
+
+	for _, point in streamPoints do
+		if rng:NextNumber() > 0.22 then
+			continue
+		end
+
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local offset = Vector2.new(math.cos(angle), math.sin(angle))
+			* rng:NextNumber(CONFIG.StreamHalfWidth + 1, CONFIG.StreamHalfWidth + CONFIG.StreamBankWidth)
+		local x = point.X + offset.X
+		local z = point.Y + offset.Y
+
+		createPebble(Vector3.new(x, groundHeightAt(x, z), z)).Parent = detailsFolder
+	end
+end
+
+local function spawnGrassTufts(detailsFolder: Folder)
+	local half = totalHalfSize() - 24
+
+	for _ = 1, CONFIG.GrassTuftCount do
+		local x = rng:NextNumber(-half, half)
+		local z = rng:NextNumber(-half, half)
+		local distanceFromPlateau = math.max(math.abs(x), math.abs(z)) - CONFIG.PlateauHalfSize
+
+		if distanceFromPlateau < CONFIG.GrassTuftMinDistanceFromPlateau then
+			continue
+		end
+
+		if isNearWater(x, z) then
+			continue
+		end
+
+		local y = groundHeightAt(x, z)
+		if y < 2 or y > CONFIG.RockHeight then
+			continue
+		end
+
+		createGrassTuft(Vector3.new(x, y, z)).Parent = detailsFolder
+	end
+end
+
 local function isValidTreePosition(x: number, z: number): boolean
 	local distanceFromCenter = math.max(math.abs(x), math.abs(z))
 
@@ -594,6 +722,7 @@ function TerrainService.Init()
 	local terrain = Workspace.Terrain
 
 	loadTreeTemplates()
+	applyStylizedTerrainPalette(terrain)
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
 	-- The whole map is script-generated so it stays reproducible.
@@ -610,6 +739,12 @@ function TerrainService.Init()
 	forestsFolder.Name = "Forests"
 	forestsFolder.Parent = mapFolder
 	spawnForests(forestsFolder)
+
+	local detailsFolder = Instance.new("Folder")
+	detailsFolder.Name = "StylizedDetails"
+	detailsFolder.Parent = mapFolder
+	spawnShorePebbles(detailsFolder)
+	spawnGrassTufts(detailsFolder)
 
 	-- TODO: Terrain Editing - the planned feature should reuse layGravelBank,
 	-- carveChannel, GetGroundHeight and GetRiverXAt instead of duplicating logic.

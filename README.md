@@ -74,3 +74,13 @@ Optionales Debug-Grid:
 4. Die Debug-Linien erscheinen in `Workspace/GridDebug`.
 
 Der naechste sinnvolle Schritt nach diesem Branch ist `feature/save-system`: platzierte Gebaeude, Rotation und Geldstand speichern und beim Join wiederherstellen.
+
+## Terrain Style
+
+`TerrainService` setzt eine einfache stilisierte Material-Palette fuer Roblox Terrain. Zusaetzlich werden erste prozedurale Platzhalter-Details erzeugt:
+
+- kantige kleine Kies-/Stein-Parts am Ufer
+- einfache Grasbueschel auf trockenem Huegelboden
+- importierte Baum-Modelle fuer Waelder
+
+Diese Details sind bewusst temporaer. Spaeter koennen echte Low-Poly-Felsen, bessere Gras-Assets und Ufer-Meshes in `ServerStorage` importiert und von `TerrainService` statt der Platzhalter genutzt werden.

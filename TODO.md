@@ -81,9 +81,14 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Cel-Shading / Visual Polish
 
-- [ ] Einheitlichen visuellen Stil definieren.
+- [x] Erste Terrain-Materialpalette definieren.
+- [x] Erste prozedurale Ufer-Kies-Details erzeugen.
+- [x] Erste prozedurale Grasbueschel erzeugen.
+- [ ] Einheitlichen visuellen Stil final definieren.
 - [ ] Lighting-Preset testen.
 - [ ] Materials fuer Placeholder und echte Models vereinheitlichen.
+- [ ] Echte Low-Poly-Felsen importieren und statt Platzhalter-Steinen nutzen.
+- [ ] Echte Gras-/Busch-Assets importieren und statt Platzhalter-Gras nutzen.
 - [ ] Erst nach Core-Gameplay polieren.
 
 ## Technische Qualitaet
