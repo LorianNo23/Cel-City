@@ -2,6 +2,10 @@
 
 Cel-City ist ein Roblox City Builder Projekt mit plain Luau, Rojo, GitHub und VS Code.
 
+## Branching
+
+Dieses Repo nutzt einen vereinfachten Git-Flow. Die Regeln stehen in `BRANCHES.md`.
+
 ## Projektstruktur
 
 - `src/ReplicatedStorage/Shared` enthält Code, den Client und Server lesen dürfen.
