@@ -40,8 +40,9 @@ if not remotes then
 end
 
 local placeBuildingRemote = getOrCreateRemoteEvent(remotes, "PlaceBuilding")
+local placementResultRemote = getOrCreateRemoteEvent(remotes, "PlacementResult")
 
 EconomyService.Init()
-PlacementService.Init(placeBuildingRemote)
+PlacementService.Init(placeBuildingRemote, placementResultRemote)
 
 print("[Server] Cel-City server started")

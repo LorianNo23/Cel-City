@@ -16,6 +16,7 @@ local PlacementService = {}
 
 local occupiedCells: { [string]: boolean } = {}
 local placedBuildingsFolder: Folder
+local placementResultRemote: RemoteEvent
 
 local DEBUG_GRID = false
 local MAX_PLACE_DISTANCE = 80
@@ -61,6 +62,28 @@ local function markCellsOccupied(cells: { Vector2 })
 	for _, cell in cells do
 		occupiedCells[Grid.cellKey(cell)] = true
 	end
+end
+
+local function serializeCells(cells: { Vector2 }): { string }
+	local cellKeys = {}
+
+	for _, cell in cells do
+		table.insert(cellKeys, Grid.cellKey(cell))
+	end
+
+	return cellKeys
+end
+
+local function sendPlacementResult(player: Player, success: boolean, reason: string, cells: { Vector2 }?)
+	if not placementResultRemote then
+		return
+	end
+
+	placementResultRemote:FireClient(player, {
+		Success = success,
+		Reason = reason,
+		Cells = if cells then serializeCells(cells) else {},
+	})
 end
 
 local function isValidRotation(rotation: number): boolean
@@ -198,7 +221,8 @@ local function createBuildingInstance(buildingId: string, buildingConfig, center
 	return createPlaceholderBuilding(buildingId, buildingConfig, centerWorld, rotation)
 end
 
-function PlacementService.Init(placeBuildingRemote: RemoteEvent)
+function PlacementService.Init(placeBuildingRemote: RemoteEvent, resultRemote: RemoteEvent)
+	placementResultRemote = resultRemote
 	placedBuildingsFolder = getPlacedBuildingsFolder()
 	createDebugGrid()
 
@@ -210,28 +234,33 @@ end
 function PlacementService.RequestPlaceBuilding(player: Player, buildingId: string, requestedPosition: Vector3, rotation: number?)
 	if typeof(buildingId) ~= "string" then
 		warn("[PlacementService] Invalid building id from", player.Name)
+		sendPlacementResult(player, false, "InvalidBuildingId")
 		return
 	end
 
 	if typeof(requestedPosition) ~= "Vector3" then
 		warn("[PlacementService] Invalid position from", player.Name)
+		sendPlacementResult(player, false, "InvalidPosition")
 		return
 	end
 
 	local requestedRotation = rotation or 0
 	if typeof(requestedRotation) ~= "number" or not isValidRotation(requestedRotation) then
 		warn("[PlacementService] Invalid rotation from", player.Name, requestedRotation)
+		sendPlacementResult(player, false, "InvalidRotation")
 		return
 	end
 
 	local buildingConfig = Buildings[buildingId]
 	if not buildingConfig then
 		warn("[PlacementService] Unknown building:", buildingId)
+		sendPlacementResult(player, false, "UnknownBuilding")
 		return
 	end
 
 	if not canPlayerRequestPosition(player, requestedPosition) then
 		warn("[PlacementService] Placement request too far away from", player.Name)
+		sendPlacementResult(player, false, "TooFar")
 		return
 	end
 
@@ -240,12 +269,14 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 
 	if not Grid.areCellsInsideBounds(occupiedByBuilding) then
 		warn("[PlacementService] Building is outside grid bounds:", buildingId, Grid.cellKey(origin))
+		sendPlacementResult(player, false, "OutOfBounds", occupiedByBuilding)
 		return
 	end
 
 	-- TODO: Collision - add checks for roads, water, steep slopes, and reserved map areas.
 	if not areCellsFree(occupiedByBuilding) then
 		warn("[PlacementService] Grid cells are already occupied for", buildingId)
+		sendPlacementResult(player, false, "Occupied", occupiedByBuilding)
 		return
 	end
 
@@ -258,6 +289,7 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, requestedRotation)
 	buildingInstance.Parent = placedBuildingsFolder
 	markCellsOccupied(occupiedByBuilding)
+	sendPlacementResult(player, true, "Placed", occupiedByBuilding)
 
 	print(
 		"[PlacementService]",

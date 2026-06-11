@@ -21,18 +21,20 @@ local localPlayer = Players.LocalPlayer
 local mouse = localPlayer:GetMouse()
 
 local placeBuildingRemote: RemoteEvent
+local placementResultRemote: RemoteEvent
 local previewPart: Part
 local previewOutline: SelectionBox
 local selectedBuildingId = "House"
 local currentRotation = 0
 local currentOrigin: Vector2?
 local currentRequestPosition: Vector3?
+local knownOccupiedCells: { [string]: boolean } = {}
 
 local PREVIEW_HEIGHT = 6
 local FALLBACK_PLACE_DISTANCE = 16
-local VALID_PREVIEW_COLOR = Color3.fromRGB(80, 220, 120)
-local INVALID_PREVIEW_COLOR = Color3.fromRGB(240, 80, 80)
-local PREVIEW_TRANSPARENCY = 0.25
+local DEFAULT_PREVIEW_COLOR = Color3.fromRGB(150, 150, 150)
+local INVALID_PREVIEW_COLOR = Color3.fromRGB(220, 90, 90)
+local PREVIEW_TRANSPARENCY = 0.45
 
 local function getCharacterRootPart(): BasePart?
 	local character = localPlayer.Character
@@ -108,7 +110,7 @@ local function createPreviewPart(): Part
 	part.CanQuery = false
 	part.CanTouch = false
 	part.CastShadow = false
-	part.Material = Enum.Material.Neon
+	part.Material = Enum.Material.SmoothPlastic
 	part.Transparency = PREVIEW_TRANSPARENCY
 	part.Parent = Workspace
 
@@ -126,6 +128,22 @@ local function createPreviewOutline(part: Part): SelectionBox
 	outline.Parent = part
 
 	return outline
+end
+
+local function areCellsKnownFree(cells: { Vector2 }): boolean
+	for _, cell in cells do
+		if knownOccupiedCells[Grid.cellKey(cell)] then
+			return false
+		end
+	end
+
+	return true
+end
+
+local function rememberOccupiedCellKeys(cellKeys: { string })
+	for _, cellKey in cellKeys do
+		knownOccupiedCells[cellKey] = true
+	end
 end
 
 local function setPreviewVisible(isVisible: boolean)
@@ -152,6 +170,7 @@ local function updatePreview()
 	local origin = Grid.worldToGrid(pointedPosition)
 	local cells = Grid.getOccupiedCells(origin, buildingConfig.Size, currentRotation)
 	local isInsideBounds = Grid.areCellsInsideBounds(cells)
+	local isKnownFree = areCellsKnownFree(cells)
 	local footprintSize = Grid.getFootprintSize(buildingConfig.Size, currentRotation)
 	local flatCenter = getPreviewCenterWorld(origin, buildingConfig.Size, currentRotation, pointedPosition.Y)
 	local groundY = getGroundYAtPosition(flatCenter)
@@ -164,7 +183,7 @@ local function updatePreview()
 	)
 	previewPart.CFrame = CFrame.new(centerWorld + Vector3.new(0, PREVIEW_HEIGHT / 2, 0))
 		* CFrame.Angles(0, math.rad(currentRotation), 0)
-	previewPart.Color = if isInsideBounds then VALID_PREVIEW_COLOR else INVALID_PREVIEW_COLOR
+	previewPart.Color = if isInsideBounds and isKnownFree then DEFAULT_PREVIEW_COLOR else INVALID_PREVIEW_COLOR
 	previewOutline.Color3 = previewPart.Color
 
 	currentOrigin = origin
@@ -181,8 +200,19 @@ end
 function PlacementController.Init()
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	placeBuildingRemote = remotes:WaitForChild("PlaceBuilding")
+	placementResultRemote = remotes:WaitForChild("PlacementResult")
 	previewPart = createPreviewPart()
 	previewOutline = createPreviewOutline(previewPart)
+
+	placementResultRemote.OnClientEvent:Connect(function(result)
+		if typeof(result) ~= "table" then
+			return
+		end
+
+		if result.Success == true then
+			rememberOccupiedCellKeys(result.Cells or {})
+		end
+	end)
 
 	RunService.RenderStepped:Connect(updatePreview)
 
