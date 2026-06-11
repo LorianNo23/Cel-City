@@ -6,20 +6,49 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local Buildings = require(ReplicatedStorage.Shared.Config.Buildings)
 
 local PlacementController = {}
 
 local placeBuildingRemote: RemoteEvent
+local localPlayer = Players.LocalPlayer
+
+local TEST_PLACE_DISTANCE = 12
+
+local function getPositionInFrontOfPlayer(): Vector3?
+	local character = localPlayer.Character
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+	if not rootPart or not rootPart:IsA("BasePart") then
+		return nil
+	end
+
+	return rootPart.Position + rootPart.CFrame.LookVector * TEST_PLACE_DISTANCE
+end
 
 function PlacementController.Init()
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	placeBuildingRemote = remotes:WaitForChild("PlaceBuilding")
 
-	-- TODO: Connect UI buttons and mouse input here.
-	-- Example later:
-	-- PlacementController.RequestPlaceBuilding("House", mouse.Hit.Position)
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then
+			return
+		end
+
+		if input.KeyCode == Enum.KeyCode.B then
+			local targetPosition = getPositionInFrontOfPlayer()
+			if targetPosition then
+				PlacementController.RequestPlaceBuilding("House", targetPosition)
+			end
+		end
+	end)
+
+	-- TODO: Ghost Preview - show a transparent preview before sending the request.
+	-- TODO: UI Selection - let the player choose which building to place.
+	-- TODO: Rotation - rotate the preview and placement request.
 end
 
 function PlacementController.RequestPlaceBuilding(buildingId: string, worldPosition: Vector3)
