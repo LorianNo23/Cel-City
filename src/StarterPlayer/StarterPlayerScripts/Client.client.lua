@@ -8,8 +8,10 @@ local Controllers = script.Parent:WaitForChild("Controllers")
 
 local EconomyController = require(Controllers:WaitForChild("EconomyController"))
 local PlacementController = require(Controllers:WaitForChild("PlacementController"))
+local SprintController = require(Controllers:WaitForChild("SprintController"))
 
 EconomyController.Init()
 PlacementController.Init()
+SprintController.Init()
 
 print("[Client] Cel-City client started for", player.Name)
