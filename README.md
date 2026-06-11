@@ -79,10 +79,18 @@ Der naechste sinnvolle Schritt nach diesem Branch ist `feature/save-system`: pla
 
 `TerrainService` setzt eine einfache stilisierte Material-Palette fuer Roblox Terrain. Zusaetzlich werden erste prozedurale Platzhalter-Details erzeugt:
 
-- kantige kleine Kies-/Stein-Parts am Ufer
 - einfache Grasbueschel auf trockenem Huegelboden
 - importierte Baum-Modelle fuer Waelder
 
-Diese Details sind bewusst temporaer. Spaeter koennen echte Low-Poly-Felsen, bessere Gras-Assets und Ufer-Meshes in `ServerStorage` importiert und von `TerrainService` statt der Platzhalter genutzt werden.
+Diese Details sind bewusst temporaer. Spaeter koennen echte Low-Poly-Felsen, bessere Gras-Assets und Ufer-Meshes in `ServerStorage` importiert und von `TerrainService` statt der Platzhalter genutzt werden. Die prozeduralen Ufer-Pebbles sind deaktiviert, weil sie auf dem Wasser nicht gut lesbar waren.
 
 Beim Serverstart loggt `TerrainService` jeden Generierungsschritt im Output. `Workspace/GeneratedMap` wird vor jeder Neugenerierung geleert, damit alte Wald- oder Deko-Objekte nicht mehrfach liegen bleiben.
+
+## Save System
+
+`SaveService` definiert bereits die Datenform fuer spaetere Speicherung:
+
+- `Money`
+- platzierte Gebaeude mit `BuildingId`, Grid-Origin und Rotation
+
+DataStore-Laden und -Speichern sind implementiert, aber aktuell bewusst deaktiviert (`DATASTORE_ENABLED = false` in `SaveService.lua`). Der Service sammelt die Daten in der Session und kann diese Struktur bereits auf `EconomyService` und `PlacementService` anwenden. Sobald API Services in Studio/Experience aktiv sind, kann der Schalter fuer echte Persistenz eingeschaltet werden.

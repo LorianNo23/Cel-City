@@ -12,6 +12,7 @@ local Workspace = game:GetService("Workspace")
 local Buildings = require(ReplicatedStorage.Shared.Config.Buildings)
 local Grid = require(ReplicatedStorage.Shared.Util.Grid)
 local EconomyService = require(script.Parent:WaitForChild("EconomyService"))
+local SaveService = require(script.Parent:WaitForChild("SaveService"))
 local TerrainService = require(script.Parent:WaitForChild("TerrainService"))
 
 local PlacementService = {}
@@ -253,6 +254,18 @@ local function createBuildingInstance(buildingId: string, buildingConfig, center
 	return createPlaceholderBuilding(buildingId, buildingConfig, centerWorld, rotation)
 end
 
+local function placeValidatedBuilding(buildingId: string, buildingConfig, origin: Vector2, rotation: number)
+	local occupiedByBuilding = Grid.getOccupiedCells(origin, buildingConfig.Size, rotation)
+	local flatCenterWorld = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, 0)
+	local groundY = getGroundYAtPosition(flatCenterWorld)
+	local centerWorld = Vector3.new(flatCenterWorld.X, groundY, flatCenterWorld.Z)
+	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, rotation)
+	buildingInstance.Parent = placedBuildingsFolder
+	markCellsOccupied(occupiedByBuilding)
+
+	return occupiedByBuilding, centerWorld
+end
+
 function PlacementService.Init(placeBuildingRemote: RemoteEvent, resultRemote: RemoteEvent)
 	placementResultRemote = resultRemote
 	placedBuildingsFolder = getPlacedBuildingsFolder()
@@ -325,15 +338,9 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 		return
 	end
 
-	-- TODO: Save System - persist placed buildings after DataStore support exists.
-
-	local flatCenterWorld = getBuildingCenterWorld(origin, buildingConfig.Size, requestedRotation, requestedPosition.Y)
-	local groundY = getGroundYAtPosition(flatCenterWorld)
-	local centerWorld = Vector3.new(flatCenterWorld.X, groundY, flatCenterWorld.Z)
-	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, requestedRotation)
-	buildingInstance.Parent = placedBuildingsFolder
-	markCellsOccupied(occupiedByBuilding)
+	local _, centerWorld = placeValidatedBuilding(buildingId, buildingConfig, origin, requestedRotation)
 	EconomyService.Spend(player, cost)
+	SaveService.AddPlacedBuilding(player, buildingId, origin, requestedRotation)
 	sendPlacementResult(player, true, "Placed", occupiedByBuilding)
 
 	print(
@@ -344,6 +351,38 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 		"at",
 		centerWorld
 	)
+end
+
+function PlacementService.RestoreBuilding(buildingId: string, origin: Vector2, rotation: number): boolean
+	if not isValidRotation(rotation) then
+		warn("[PlacementService] Cannot restore building with invalid rotation:", rotation)
+		return false
+	end
+
+	local buildingConfig = Buildings[buildingId]
+	if not buildingConfig then
+		warn("[PlacementService] Cannot restore unknown building:", buildingId)
+		return false
+	end
+
+	local occupiedByBuilding = Grid.getOccupiedCells(origin, buildingConfig.Size, rotation)
+	if not Grid.areCellsInsideBounds(occupiedByBuilding) then
+		warn("[PlacementService] Cannot restore building outside grid bounds:", buildingId, Grid.cellKey(origin))
+		return false
+	end
+
+	if not areCellsOnDryLand(occupiedByBuilding) then
+		warn("[PlacementService] Cannot restore building on water:", buildingId)
+		return false
+	end
+
+	if not areCellsFree(occupiedByBuilding) then
+		warn("[PlacementService] Cannot restore building on occupied cells:", buildingId)
+		return false
+	end
+
+	placeValidatedBuilding(buildingId, buildingConfig, origin, rotation)
+	return true
 end
 
 return PlacementService
