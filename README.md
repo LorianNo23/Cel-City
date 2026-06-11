@@ -28,3 +28,28 @@ Dieses Repo nutzt einen vereinfachten Git-Flow. Die Regeln stehen in `BRANCHES.m
 Im aktuellen Prototyp kann der Spieler in Studio die Taste `B` druecken. Der Client fragt dann beim Server an, ein `House` vor dem Spieler zu platzieren. Der Server snappt die Position auf das Grid, prueft grob belegte Zellen und erstellt ein einfaches Placeholder-Gebaeude in `Workspace/PlacedBuildings`, falls noch kein echtes Model existiert.
 
 Es gibt noch keine finale UI, keine echten Gebaeude-Modelle, keinen Economy-Check und keinen DataStore. Diese Struktur ist bewusst klein gehalten, damit die naechsten Systeme sauber darauf aufbauen koennen.
+
+## Grid-System
+
+Das Grid liegt in `ReplicatedStorage/Shared/Util/Grid.lua`, damit Client und Server dieselben Koordinatenregeln lesen koennen. Die finale Entscheidung bleibt trotzdem immer auf dem Server.
+
+Aktuelle Grid-Config:
+
+- `TileSize = 4`
+- `MinX = -50`
+- `MaxX = 50`
+- `MinY = -50`
+- `MaxY = 50`
+
+`worldToGrid` wandelt eine Roblox-World-Position in eine Grid-Zelle um. `gridToWorld` wandelt eine Grid-Zelle wieder in eine World-Position. `getOccupiedCells` berechnet alle Zellen, die ein Gebaeude mit einer bestimmten Groesse belegt. Rotation ist fuer `0`, `90`, `180` und `270` Grad vorbereitet; bei `90` und `270` wird die Footprint-Groesse logisch gedreht.
+
+Bounds bedeuten: Der Server akzeptiert Platzierungen nur innerhalb `MinX..MaxX` und `MinY..MaxY`. Zellen ausserhalb dieses Bereichs werden abgelehnt.
+
+Optionales Debug-Grid:
+
+1. `src/ServerScriptService/Services/PlacementService.lua` oeffnen.
+2. `local DEBUG_GRID = false` auf `true` setzen.
+3. Rojo synchronisieren lassen und Studio neu starten oder Play neu starten.
+4. Die Debug-Linien erscheinen in `Workspace/GridDebug`.
+
+Der naechste sinnvolle Schritt nach diesem Branch ist `feature/building-placement`: Ghost Preview, Rotation per Taste, bessere Platzierungsfeedbacks und echte Building Models.

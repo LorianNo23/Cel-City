@@ -17,6 +17,7 @@ local placeBuildingRemote: RemoteEvent
 local localPlayer = Players.LocalPlayer
 
 local TEST_PLACE_DISTANCE = 12
+local TEST_ROTATION = 0
 
 local function getPositionInFrontOfPlayer(): Vector3?
 	local character = localPlayer.Character
@@ -62,7 +63,7 @@ function PlacementController.RequestPlaceBuilding(buildingId: string, worldPosit
 		return
 	end
 
-	placeBuildingRemote:FireServer(buildingId, worldPosition)
+	placeBuildingRemote:FireServer(buildingId, worldPosition, TEST_ROTATION)
 end
 
 return PlacementController
