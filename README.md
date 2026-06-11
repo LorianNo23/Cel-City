@@ -41,11 +41,13 @@ Es gibt noch keine finale UI, keine echten Gebaeude-Modelle und keinen DataStore
 
 Beim Platzieren prueft der Server `Buildings[buildingId].Cost`. Geld wird nur abgezogen, wenn alle Placement-Checks bestanden sind und das Gebaeude wirklich platziert wird. Wenn der Spieler nicht genug Geld hat, antwortet der Server mit `PlacementResult.Reason = "NotEnoughMoney"` und der Client faerbt die Preview rot.
 
+Der Client zeigt oben rechts eine kleine Money-Anzeige. Wenn Geld ausgegeben wird, erscheint kurz ein rotes Minus-Popup unter der Anzeige.
+
 Noch nicht enthalten:
 
 - Kein DataStore.
 - Kein Einkommen pro Gebaeude.
-- Keine finale Money-UI.
+- Keine finale Economy-UI.
 - Kein Balancing.
 
 ## Grid-System
