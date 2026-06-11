@@ -22,6 +22,7 @@ local mouse = localPlayer:GetMouse()
 
 local placeBuildingRemote: RemoteEvent
 local previewPart: Part
+local previewOutline: SelectionBox
 local selectedBuildingId = "House"
 local currentRotation = 0
 local currentOrigin: Vector2?
@@ -31,6 +32,7 @@ local PREVIEW_HEIGHT = 6
 local FALLBACK_PLACE_DISTANCE = 16
 local VALID_PREVIEW_COLOR = Color3.fromRGB(80, 220, 120)
 local INVALID_PREVIEW_COLOR = Color3.fromRGB(240, 80, 80)
+local PREVIEW_TRANSPARENCY = 0.25
 
 local function getCharacterRootPart(): BasePart?
 	local character = localPlayer.Character
@@ -105,16 +107,34 @@ local function createPreviewPart(): Part
 	part.CanCollide = false
 	part.CanQuery = false
 	part.CanTouch = false
-	part.Material = Enum.Material.ForceField
-	part.Transparency = 0.45
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	part.Transparency = PREVIEW_TRANSPARENCY
 	part.Parent = Workspace
+
+	mouse.TargetFilter = part
 
 	return part
 end
 
+local function createPreviewOutline(part: Part): SelectionBox
+	local outline = Instance.new("SelectionBox")
+	outline.Name = "PlacementPreviewOutline"
+	outline.Adornee = part
+	outline.LineThickness = 0.06
+	outline.SurfaceTransparency = 1
+	outline.Parent = part
+
+	return outline
+end
+
 local function setPreviewVisible(isVisible: boolean)
 	if previewPart then
-		previewPart.Transparency = if isVisible then 0.45 else 1
+		previewPart.Transparency = if isVisible then PREVIEW_TRANSPARENCY else 1
+	end
+
+	if previewOutline then
+		previewOutline.Visible = isVisible
 	end
 end
 
@@ -145,6 +165,7 @@ local function updatePreview()
 	previewPart.CFrame = CFrame.new(centerWorld + Vector3.new(0, PREVIEW_HEIGHT / 2, 0))
 		* CFrame.Angles(0, math.rad(currentRotation), 0)
 	previewPart.Color = if isInsideBounds then VALID_PREVIEW_COLOR else INVALID_PREVIEW_COLOR
+	previewOutline.Color3 = previewPart.Color
 
 	currentOrigin = origin
 	currentRequestPosition = Grid.gridToWorld(origin, groundY)
@@ -161,6 +182,7 @@ function PlacementController.Init()
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	placeBuildingRemote = remotes:WaitForChild("PlaceBuilding")
 	previewPart = createPreviewPart()
+	previewOutline = createPreviewOutline(previewPart)
 
 	RunService.RenderStepped:Connect(updatePreview)
 
@@ -179,7 +201,7 @@ function PlacementController.Init()
 		end
 	end)
 
-	print("[PlacementController] Ready. Move mouse to preview, press R to rotate, B to place.")
+	print("[PlacementController] Preview created. Move mouse to preview, press R to rotate, B to place.")
 end
 
 function PlacementController.RequestPlaceBuilding()
