@@ -707,6 +707,7 @@ function TerrainService.Init()
 	-- The whole map is script-generated so it stays reproducible.
 	local mapFolder = clearGeneratedMapFolder()
 	terrain:Clear()
+	terrain.Decoration = false
 	applyStylizedTerrainPalette(terrain)
 
 	runGenerationStep("ground slab", function()

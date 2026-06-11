@@ -11,6 +11,7 @@ Dieses Repo nutzt einen vereinfachten Git-Flow. Die Regeln stehen in `BRANCHES.m
 - `src/ReplicatedStorage/Shared` enthaelt Code, den Client und Server lesen duerfen.
 - `src/ReplicatedStorage/Remotes` enthaelt RemoteEvents fuer Client-Server-Kommunikation.
 - `src/ServerScriptService` enthaelt serverseitige Scripts und Services. Der Server bleibt authoritative.
+- `src/ServerStorage/BuildingModels` ist der Zielordner fuer importierte Building-Modelle.
 - `src/StarterPlayer/StarterPlayerScripts` enthaelt clientseitige Scripts und Controller.
 - `src/Workspace/Map` ist der Platz fuer spaetere Map-Objekte.
 - `src/Workspace/PlacedBuildings` enthaelt zur Laufzeit platzierte Gebaeude.
@@ -82,6 +83,8 @@ Der naechste sinnvolle Schritt nach diesem Branch ist `feature/save-system`: pla
 - einfache Grasbueschel auf trockenem Huegelboden
 - importierte Baum-Modelle fuer Waelder
 
+Die eingebaute Roblox-Terrain-Dekoration ist deaktiviert, damit hohes Gras Gebaeude und Previews nicht ueberdeckt. Spaeter sollten kontrollierte Gras-/Busch-Assets den Stil tragen.
+
 Diese Details sind bewusst temporaer. Spaeter koennen echte Low-Poly-Felsen, bessere Gras-Assets und Ufer-Meshes in `ServerStorage` importiert und von `TerrainService` statt der Platzhalter genutzt werden. Die prozeduralen Ufer-Pebbles sind deaktiviert, weil sie auf dem Wasser nicht gut lesbar waren.
 
 Beim Serverstart loggt `TerrainService` jeden Generierungsschritt im Output. `Workspace/GeneratedMap` wird vor jeder Neugenerierung geleert, damit alte Wald- oder Deko-Objekte nicht mehrfach liegen bleiben.
@@ -94,3 +97,18 @@ Beim Serverstart loggt `TerrainService` jeden Generierungsschritt im Output. `Wo
 - platzierte Gebaeude mit `BuildingId`, Grid-Origin und Rotation
 
 DataStore-Laden und -Speichern sind implementiert, aber aktuell bewusst deaktiviert (`DATASTORE_ENABLED = false` in `SaveService.lua`). Der Service sammelt die Daten in der Session und kann diese Struktur bereits auf `EconomyService` und `PlacementService` anwenden. Sobald API Services in Studio/Experience aktiv sind, kann der Schalter fuer echte Persistenz eingeschaltet werden.
+
+## Building Models
+
+Building-Modelle liegen in Studio unter `ServerStorage/BuildingModels`. Varianten folgen diesem Namensschema:
+
+- `CelCityHouse1`, `CelCityHouse2`, ...
+- `CelCityShop1`, `CelCityShop2`, ...
+
+`Buildings.lua` nutzt pro Building eine `ModelNames` Liste. Der Server waehlt beim Platzieren eine vorhandene Variante. Wenn kein Modell gefunden wird, bleibt der Placeholder-Fallback aktiv.
+
+GLB-Dateien in `assets/models` sind Source Assets. Sie muessen in Roblox Studio importiert und danach als Model in `ServerStorage/BuildingModels` abgelegt werden.
+
+Hinweis: Rojo verwaltet den Ordner `ServerStorage/BuildingModels`. Importierte Studio-Modelle sollten nach dem Import entweder als Roblox Model-Dateien in den Rojo-Workflow uebernommen werden oder in Studio erst getestet werden, bevor Rojo erneut verbunden wird.
+
+Importierte Building-Modelle werden beim Platzieren serverseitig auf den in `Buildings.lua` konfigurierten Grid-Footprint skaliert. Die lokale Building-Auswahl unten links erlaubt aktuell `House` und `Shop`.

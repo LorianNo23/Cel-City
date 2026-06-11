@@ -38,6 +38,7 @@ local FALLBACK_PLACE_DISTANCE = 16
 local DEFAULT_PREVIEW_COLOR = Color3.fromRGB(150, 150, 150)
 local INVALID_PREVIEW_COLOR = Color3.fromRGB(220, 90, 90)
 local PREVIEW_TRANSPARENCY = 0.45
+local buildingButtons: { [string]: TextButton } = {}
 
 local function getCharacterRootPart(): BasePart?
 	local character = localPlayer.Character
@@ -251,12 +252,95 @@ local function rotatePreview()
 	print("[PlacementController] Rotation:", currentRotation)
 end
 
+local function setSelectedBuilding(buildingId: string)
+	if not Buildings[buildingId] then
+		warn("[PlacementController] Unknown building:", buildingId)
+		return
+	end
+
+	selectedBuildingId = buildingId
+	rememberLastFailure(nil, nil)
+
+	for id, button in buildingButtons do
+		local isSelected = id == selectedBuildingId
+		button.BackgroundColor3 = if isSelected then Color3.fromRGB(76, 126, 92) else Color3.fromRGB(35, 38, 42)
+		button.TextColor3 = if isSelected then Color3.fromRGB(255, 255, 255) else Color3.fromRGB(220, 220, 220)
+	end
+
+	print("[PlacementController] Selected building:", selectedBuildingId)
+	updatePreview()
+end
+
+local function createBuildingSelectionGui()
+	local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "BuildingSelectionGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.IgnoreGuiInset = false
+	screenGui.Parent = playerGui
+
+	local panel = Instance.new("Frame")
+	panel.Name = "Panel"
+	panel.AnchorPoint = Vector2.new(0, 1)
+	panel.Position = UDim2.new(0, 24, 1, -24)
+	panel.Size = UDim2.fromOffset(320, 76)
+	panel.BackgroundColor3 = Color3.fromRGB(25, 27, 31)
+	panel.BackgroundTransparency = 0.08
+	panel.BorderSizePixel = 0
+	panel.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = panel
+
+	local list = Instance.new("UIListLayout")
+	list.FillDirection = Enum.FillDirection.Horizontal
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Padding = UDim.new(0, 8)
+	list.VerticalAlignment = Enum.VerticalAlignment.Center
+	list.Parent = panel
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.PaddingTop = UDim.new(0, 10)
+	padding.PaddingBottom = UDim.new(0, 10)
+	padding.Parent = panel
+
+	for buildingId, config in Buildings do
+		local button = Instance.new("TextButton")
+		button.Name = `{buildingId}Button`
+		button.Size = UDim2.fromOffset(142, 56)
+		button.BackgroundColor3 = Color3.fromRGB(35, 38, 42)
+		button.BorderSizePixel = 0
+		button.Font = Enum.Font.GothamBold
+		button.Text = `{config.DisplayName}\n${config.Cost}`
+		button.TextColor3 = Color3.fromRGB(220, 220, 220)
+		button.TextSize = 16
+		button.TextWrapped = true
+		button.Parent = panel
+
+		local buttonCorner = Instance.new("UICorner")
+		buttonCorner.CornerRadius = UDim.new(0, 6)
+		buttonCorner.Parent = button
+
+		button.Activated:Connect(function()
+			setSelectedBuilding(buildingId)
+			PlacementController.SetBuildMode(true)
+		end)
+
+		buildingButtons[buildingId] = button
+	end
+end
+
 function PlacementController.Init()
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	placeBuildingRemote = remotes:WaitForChild("PlaceBuilding")
 	placementResultRemote = remotes:WaitForChild("PlacementResult")
 	previewPart = createPreviewPart()
 	previewOutline = createPreviewOutline(previewPart)
+	createBuildingSelectionGui()
 
 	placementResultRemote.OnClientEvent:Connect(function(result)
 		if typeof(result) ~= "table" then
@@ -297,6 +381,7 @@ function PlacementController.Init()
 		end
 	end)
 
+	setSelectedBuilding(selectedBuildingId)
 	print("[PlacementController] Press B to toggle build mode. In build mode: R rotates, left-click places.")
 end
 
