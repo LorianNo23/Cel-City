@@ -40,9 +40,9 @@ local placeBuildingRemote = getOrCreateRemoteEvent(remotes, "PlaceBuilding")
 local placementResultRemote = getOrCreateRemoteEvent(remotes, "PlacementResult")
 
 local function startService(serviceName: string, initCallback)
-	local success, err = pcall(initCallback)
+	local success, err = xpcall(initCallback, debug.traceback)
 	if not success then
-		warn("[Server] Failed to start", serviceName, err)
+		warn(`[Server] Failed to start {serviceName}:`, err)
 	end
 end
 
@@ -62,9 +62,6 @@ end
 
 local CelShadingService = requireService("CelShadingService")
 local TerrainService = requireService("TerrainService")
-local SaveService = requireService("SaveService")
-local EconomyService = requireService("EconomyService")
-local PlacementService = requireService("PlacementService")
 
 if not TerrainService then
 	error("[Server] TerrainService is required for startup")
@@ -78,6 +75,11 @@ end)
 startService("TerrainService", function()
 	TerrainService.Init()
 end)
+
+local SaveService = requireService("SaveService")
+local EconomyService = requireService("EconomyService")
+local PlacementService = requireService("PlacementService")
+
 startService("SaveService", function()
 	if SaveService then
 		SaveService.Init()

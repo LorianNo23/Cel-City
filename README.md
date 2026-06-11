@@ -89,6 +89,49 @@ Diese Details sind bewusst temporaer. Spaeter koennen echte Low-Poly-Felsen, bes
 
 Beim Serverstart loggt `TerrainService` jeden Generierungsschritt im Output. `Workspace/GeneratedMap` wird vor jeder Neugenerierung geleert, damit alte Wald- oder Deko-Objekte nicht mehrfach liegen bleiben.
 
+### Terrain testen
+
+Roblox Terrain wird nicht als Datei unter `src/Workspace/Map` von Rojo synchronisiert. Rojo legt nur die Workspace-Ordner an. Das eigentliche Terrain entsteht erst zur Laufzeit in `Workspace.Terrain`, wenn der Server `TerrainService.Init()` startet.
+
+Testablauf in Studio:
+
+1. Rojo mit `rojo serve default.project.json` starten und in Studio verbinden.
+2. In Studio `Play` oder `Run` druecken.
+3. Den Output oeffnen und nach `[TerrainService]` suchen.
+
+Erwartete Logs:
+
+```text
+[TerrainService] Generation started with seed 1337
+[TerrainService] Starting generated map cleanup
+[TerrainService] Clearing Workspace.Terrain
+[TerrainService] Finished clearing Workspace.Terrain
+[TerrainService] Finished generated map cleanup
+[TerrainService] Starting terrain settings
+[TerrainService] Finished terrain settings
+[TerrainService] Starting ground slab
+[TerrainService] Finished ground slab
+[TerrainService] Starting hill ring
+[TerrainService] Finished hill ring
+[TerrainService] Starting river path
+[TerrainService] Finished river path
+[TerrainService] Starting water
+[TerrainService] Finished water
+[TerrainService] Starting forests
+[TerrainService] Finished forests
+[TerrainService] Starting optional stylized details
+[TerrainService] Finished optional stylized details
+[TerrainService] Terrain generated with seed 1337
+```
+
+Wenn ein Schritt fehlschlaegt, zeigt der Output den konkreten Step, zum Beispiel `Failed during generation step "water"`. Zusaetzlich schreibt der Server einen Stacktrace zu `Failed to start TerrainService`.
+
+Manuelles Neugenerieren ueber die Studio Command Bar ist moeglich, solange das Spiel laeuft:
+
+```lua
+require(game.ServerScriptService.Services.TerrainService).Init()
+```
+
 ## Save System
 
 `SaveService` definiert bereits die Datenform fuer spaetere Speicherung:
