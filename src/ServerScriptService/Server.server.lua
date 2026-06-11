@@ -44,7 +44,16 @@ end
 local placeBuildingRemote = getOrCreateRemoteEvent(remotes, "PlaceBuilding")
 local placementResultRemote = getOrCreateRemoteEvent(remotes, "PlacementResult")
 
-CelShadingService.Init()
+local function startService(serviceName: string, initCallback)
+	local success, err = pcall(initCallback)
+	if not success then
+		warn("[Server] Failed to start", serviceName, err)
+	end
+end
+
+startService("CelShadingService", function()
+	CelShadingService.Init()
+end)
 TerrainService.Init()
 EconomyService.Init()
 PlacementService.Init(placeBuildingRemote, placementResultRemote)

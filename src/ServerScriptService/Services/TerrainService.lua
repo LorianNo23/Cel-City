@@ -96,7 +96,13 @@ end
 
 local function applyStylizedTerrainPalette(terrain: Terrain)
 	for material, color in TERRAIN_COLORS do
-		terrain:SetMaterialColor(material, color)
+		local success, err = pcall(function()
+			terrain:SetMaterialColor(material, color)
+		end)
+
+		if not success then
+			warn("[TerrainService] Could not set terrain material color:", material, err)
+		end
 	end
 end
 
@@ -722,11 +728,11 @@ function TerrainService.Init()
 	local terrain = Workspace.Terrain
 
 	loadTreeTemplates()
-	applyStylizedTerrainPalette(terrain)
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
 	-- The whole map is script-generated so it stays reproducible.
 	terrain:Clear()
+	applyStylizedTerrainPalette(terrain)
 
 	fillGroundSlab(terrain)
 	fillHillRing(terrain)
