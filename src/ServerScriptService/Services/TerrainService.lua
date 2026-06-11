@@ -15,6 +15,7 @@
 	(see TerrainService.GetGroundHeight / TerrainService.GetRiverXAt).
 ]]
 
+local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
 local TerrainService = {}
@@ -432,7 +433,8 @@ local function isNearWater(x: number, z: number): boolean
 	return false
 end
 
-local function createTree(position: Vector3): Model
+-- Fallback used when no imported tree models exist in ServerStorage.TreeModels.
+local function createPlaceholderTree(position: Vector3): Model
 	local trunkHeight = rng:NextNumber(6, 10)
 	local crownSize = rng:NextNumber(7, 11)
 
@@ -460,6 +462,65 @@ local function createTree(position: Vector3): Model
 
 	tree.PrimaryPart = trunk
 	return tree
+end
+
+-- Imported tree models (e.g. CelCityTree1) placed in ServerStorage.TreeModels.
+-- Multiple models in the folder are picked randomly for variety.
+local treeTemplates: { Instance } = {}
+
+local function loadTreeTemplates()
+	table.clear(treeTemplates)
+
+	local treeModels = ServerStorage:FindFirstChild("TreeModels")
+	if not treeModels then
+		warn("[TerrainService] ServerStorage.TreeModels not found, using placeholder trees")
+		return
+	end
+
+	for _, child in treeModels:GetChildren() do
+		if child:IsA("Model") or child:IsA("BasePart") then
+			table.insert(treeTemplates, child)
+		end
+	end
+
+	if #treeTemplates == 0 then
+		warn("[TerrainService] ServerStorage.TreeModels is empty, using placeholder trees")
+	end
+end
+
+local function createTree(position: Vector3): Instance
+	if #treeTemplates == 0 then
+		return createPlaceholderTree(position)
+	end
+
+	local template = treeTemplates[rng:NextInteger(1, #treeTemplates)]
+	local clone = template:Clone()
+
+	-- Imported meshes are often unanchored and would fall through the map.
+	if clone:IsA("BasePart") then
+		clone.Anchored = true
+	end
+	for _, descendant in clone:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = true
+		end
+	end
+
+	local yRotation = CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
+
+	if clone:IsA("Model") then
+		clone:ScaleTo(rng:NextNumber(0.9, 1.3))
+
+		-- Place the bottom of the bounding box on the ground, regardless of
+		-- where the import put the pivot.
+		local boundsCFrame, boundsSize = clone:GetBoundingBox()
+		local pivotToBottom = clone:GetPivot().Position.Y - (boundsCFrame.Position.Y - boundsSize.Y / 2)
+		clone:PivotTo(CFrame.new(position + Vector3.new(0, pivotToBottom, 0)) * yRotation)
+	elseif clone:IsA("BasePart") then
+		clone.CFrame = CFrame.new(position + Vector3.new(0, clone.Size.Y / 2, 0)) * yRotation
+	end
+
+	return clone
 end
 
 local function isValidTreePosition(x: number, z: number): boolean
@@ -529,6 +590,8 @@ end
 
 function TerrainService.Init()
 	local terrain = Workspace.Terrain
+
+	loadTreeTemplates()
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
 	-- The whole map is script-generated so it stays reproducible.
