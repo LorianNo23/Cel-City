@@ -11,7 +11,7 @@ Dieses Repo nutzt einen vereinfachten Git-Flow. Die Regeln stehen in `BRANCHES.m
 - `src/ReplicatedStorage/Shared` enthaelt Code, den Client und Server lesen duerfen.
 - `src/ReplicatedStorage/Remotes` enthaelt RemoteEvents fuer Client-Server-Kommunikation.
 - `src/ServerScriptService` enthaelt serverseitige Scripts und Services. Der Server bleibt authoritative.
-- `src/ServerStorage/BuildingModels` ist der Zielordner fuer importierte Building-Modelle.
+- `ServerStorage/BuildingModels` ist in Studio der Zielordner fuer importierte Building-Modelle.
 - `src/StarterPlayer/StarterPlayerScripts` enthaelt clientseitige Scripts und Controller.
 - `src/Workspace/Map` ist der Platz fuer spaetere Map-Objekte.
 - `src/Workspace/PlacedBuildings` enthaelt zur Laufzeit platzierte Gebaeude.
@@ -109,6 +109,6 @@ Building-Modelle liegen in Studio unter `ServerStorage/BuildingModels`. Variante
 
 GLB-Dateien in `assets/models` sind Source Assets. Sie muessen in Roblox Studio importiert und danach als Model in `ServerStorage/BuildingModels` abgelegt werden.
 
-Hinweis: Rojo verwaltet den Ordner `ServerStorage/BuildingModels`. Importierte Studio-Modelle sollten nach dem Import entweder als Roblox Model-Dateien in den Rojo-Workflow uebernommen werden oder in Studio erst getestet werden, bevor Rojo erneut verbunden wird.
+Hinweis: Rojo verwaltet `ServerStorage/BuildingModels` aktuell bewusst nicht. So bleiben in Studio importierte GLB-Modelle beim Rojo-Sync erhalten. Die GLB-Dateien in `assets/models` sind im Git versioniert; die daraus importierten Studio-Modelle muessen bei einer frischen Experience einmal manuell nach `ServerStorage/BuildingModels` importiert werden.
 
 Importierte Building-Modelle werden beim Platzieren serverseitig auf den in `Buildings.lua` konfigurierten Grid-Footprint skaliert. Die lokale Building-Auswahl unten links erlaubt aktuell `House` und `Shop`.
