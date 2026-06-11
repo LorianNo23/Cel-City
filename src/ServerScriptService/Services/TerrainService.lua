@@ -57,10 +57,12 @@ local CONFIG = {
 	-- randomized per world within these ranges.
 	ForestCountMin = 4,
 	ForestCountMax = 7,
-	TreesPerForestMin = 35,
-	TreesPerForestMax = 60,
-	ForestRadiusMin = 35,
-	ForestRadiusMax = 60,
+	TreesPerForestMin = 10,
+	TreesPerForestMax = 18,
+	ForestRadiusMin = 90,
+	ForestRadiusMax = 140,
+	ImportedTreeScaleMin = 39,
+	ImportedTreeScaleMax = 51,
 }
 
 -- Forests are intentionally different on every server start, while the
@@ -509,7 +511,7 @@ local function createTree(position: Vector3): Instance
 	local yRotation = CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
 
 	if clone:IsA("Model") then
-		clone:ScaleTo(rng:NextNumber(0.9, 1.3))
+		clone:ScaleTo(rng:NextNumber(CONFIG.ImportedTreeScaleMin, CONFIG.ImportedTreeScaleMax))
 
 		-- Place the bottom of the bounding box on the ground, regardless of
 		-- where the import put the pivot.
