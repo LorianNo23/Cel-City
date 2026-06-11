@@ -94,6 +94,10 @@ local function totalHalfSize(): number
 	return CONFIG.PlateauHalfSize + CONFIG.BorderWidth
 end
 
+local function logStep(message: string)
+	print("[TerrainService]", message)
+end
+
 local function applyStylizedTerrainPalette(terrain: Terrain)
 	for material, color in TERRAIN_COLORS do
 		local success, err = pcall(function()
@@ -724,33 +728,79 @@ local function getGeneratedMapFolder(): Folder
 	return folder
 end
 
+local function clearGeneratedMapFolder(): Folder
+	local folder = getGeneratedMapFolder()
+	folder:ClearAllChildren()
+	return folder
+end
+
+local function runGenerationStep(stepName: string, callback)
+	logStep(`Starting {stepName}`)
+
+	local success, err = pcall(callback)
+	if not success then
+		error(`[TerrainService] Failed during {stepName}: {err}`, 0)
+	end
+
+	logStep(`Finished {stepName}`)
+end
+
+local function runOptionalGenerationStep(stepName: string, callback)
+	logStep(`Starting optional {stepName}`)
+
+	local success, err = pcall(callback)
+	if not success then
+		warn(`[TerrainService] Optional step failed during {stepName}:`, err)
+		return
+	end
+
+	logStep(`Finished optional {stepName}`)
+end
+
 function TerrainService.Init()
 	local terrain = Workspace.Terrain
 
+	logStep(`Generation started with seed {SEED}`)
 	loadTreeTemplates()
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
 	-- The whole map is script-generated so it stays reproducible.
+	local mapFolder = clearGeneratedMapFolder()
 	terrain:Clear()
 	applyStylizedTerrainPalette(terrain)
 
-	fillGroundSlab(terrain)
-	fillHillRing(terrain)
+	runGenerationStep("ground slab", function()
+		fillGroundSlab(terrain)
+	end)
 
-	generateRiverPath()
-	generateWater(terrain)
+	runGenerationStep("hill ring", function()
+		fillHillRing(terrain)
+	end)
 
-	local mapFolder = getGeneratedMapFolder()
+	runGenerationStep("river path", function()
+		generateRiverPath()
+	end)
+
+	runGenerationStep("water", function()
+		generateWater(terrain)
+	end)
+
 	local forestsFolder = Instance.new("Folder")
 	forestsFolder.Name = "Forests"
 	forestsFolder.Parent = mapFolder
-	spawnForests(forestsFolder)
+
+	runGenerationStep("forests", function()
+		spawnForests(forestsFolder)
+	end)
 
 	local detailsFolder = Instance.new("Folder")
 	detailsFolder.Name = "StylizedDetails"
 	detailsFolder.Parent = mapFolder
-	spawnShorePebbles(detailsFolder)
-	spawnGrassTufts(detailsFolder)
+
+	runOptionalGenerationStep("stylized details", function()
+		spawnShorePebbles(detailsFolder)
+		spawnGrassTufts(detailsFolder)
+	end)
 
 	-- TODO: Terrain Editing - the planned feature should reuse layGravelBank,
 	-- carveChannel, GetGroundHeight and GetRiverXAt instead of duplicating logic.
@@ -758,7 +808,7 @@ function TerrainService.Init()
 	-- the river or a stream once bounds checking is added.
 	-- TODO: Bridges - allow roads to cross the river using GetRiverXAt.
 
-	print("[TerrainService] Terrain generated (seed:", SEED, ")")
+	logStep(`Terrain generated with seed {SEED}`)
 end
 
 return TerrainService

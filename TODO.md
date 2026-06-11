@@ -84,6 +84,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [x] Erste Terrain-Materialpalette definieren.
 - [x] Erste prozedurale Ufer-Kies-Details erzeugen.
 - [x] Erste prozedurale Grasbueschel erzeugen.
+- [x] Terrain-Generation mit Schritt-Logs stabilisieren.
+- [x] `Workspace/GeneratedMap` vor Neugenerierung leeren.
 - [ ] Einheitlichen visuellen Stil final definieren.
 - [ ] Lighting-Preset testen.
 - [ ] Materials fuer Placeholder und echte Models vereinheitlichen.
