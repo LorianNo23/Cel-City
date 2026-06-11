@@ -39,7 +39,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Danach: `feature/ui`
 
-- [ ] Kleine Money-Anzeige bauen.
+- [x] Kleine Money-Anzeige bauen.
+- [x] Rotes Minus-Popup anzeigen, wenn Geld ausgegeben wird.
 - [ ] Einfache Building-Auswahl bauen.
 - [ ] Ausgewaehltes Gebaeude im `PlacementController` wechseln.
 - [ ] Platzierungsfehler kurz anzeigen, z.B. `Occupied`, `OutOfBounds`, `NotEnoughMoney`.
