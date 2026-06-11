@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Services = ServerScriptService:WaitForChild("Services")
 
+local CelShadingService = require(Services:WaitForChild("CelShadingService"))
 local EconomyService = require(Services:WaitForChild("EconomyService"))
 local PlacementService = require(Services:WaitForChild("PlacementService"))
 
@@ -41,6 +42,7 @@ end
 
 local placeBuildingRemote = getOrCreateRemoteEvent(remotes, "PlaceBuilding")
 
+CelShadingService.Init()
 EconomyService.Init()
 PlacementService.Init(placeBuildingRemote)
 
