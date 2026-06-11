@@ -42,8 +42,10 @@ local function applyLightingSettings()
 	-- Bright, even daylight.
 	Lighting.Brightness = 3
 	Lighting.ClockTime = 10
-	Lighting.Ambient = Color3.fromRGB(80, 80, 80)
-	Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 140)
+	-- Ambient values control how dark shadowed areas are. Keep them fairly
+	-- high so forest shadows stay readable instead of pitch black.
+	Lighting.Ambient = Color3.fromRGB(125, 125, 125)
+	Lighting.OutdoorAmbient = Color3.fromRGB(195, 195, 195)
 end
 
 local function applyColorCorrection()
