@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local Buildings = require(ReplicatedStorage.Shared.Config.Buildings)
 local Grid = require(ReplicatedStorage.Shared.Util.Grid)
+local TerrainService = require(script.Parent:WaitForChild("TerrainService"))
 
 local PlacementService = {}
 
@@ -47,6 +48,12 @@ local function canPlayerRequestPosition(player: Player, position: Vector3): bool
 
 	return (rootPart.Position - position).Magnitude <= MAX_PLACE_DISTANCE
 end
+
+-- Water and the slate gravel banks around the river and streams.
+local WATER_MATERIALS = {
+	[Enum.Material.Water] = true,
+	[Enum.Material.Slate] = true,
+}
 
 local function areCellsFree(cells: { Vector2 }): boolean
 	for _, cell in cells do
@@ -102,8 +109,8 @@ local function getBuildingCenterWorld(origin: Vector2, size: Vector2, rotation: 
 	return originWorld + halfOffset
 end
 
-local function getGroundYAtPosition(position: Vector3): number
-	local rayOrigin = Vector3.new(position.X, 1000, position.Z)
+local function raycastGround(x: number, z: number): RaycastResult?
+	local rayOrigin = Vector3.new(x, 1000, z)
 	local rayDirection = Vector3.new(0, -2000, 0)
 	local raycastParams = RaycastParams.new()
 	local excludedInstances = {}
@@ -120,12 +127,36 @@ local function getGroundYAtPosition(position: Vector3): number
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	raycastParams.FilterDescendantsInstances = excludedInstances
 
-	local result = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+	return Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+end
+
+local function getGroundYAtPosition(position: Vector3): number
+	local result = raycastGround(position.X, position.Z)
 	if result then
 		return result.Position.Y
 	end
 
 	return 0
+end
+
+local function areCellsOnDryLand(cells: { Vector2 }): boolean
+	for _, cell in cells do
+		local world = Grid.gridToWorld(cell)
+
+		-- Analytic check against the generated river and stream paths.
+		if TerrainService.IsWaterArea(world.X, world.Z) then
+			return false
+		end
+
+		-- Material check against the real terrain: voxels are 4 studs, so the
+		-- visible gravel can extend a few studs past the analytic radius.
+		local result = raycastGround(world.X, world.Z)
+		if result and WATER_MATERIALS[result.Material] then
+			return false
+		end
+	end
+
+	return true
 end
 
 local function createDebugGrid()
@@ -273,7 +304,13 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 		return
 	end
 
-	-- TODO: Collision - add checks for roads, water, steep slopes, and reserved map areas.
+	if not areCellsOnDryLand(occupiedByBuilding) then
+		warn("[PlacementService] Building overlaps river or stream:", buildingId)
+		sendPlacementResult(player, false, "Water", occupiedByBuilding)
+		return
+	end
+
+	-- TODO: Collision - add checks for roads, steep slopes, and reserved map areas.
 	if not areCellsFree(occupiedByBuilding) then
 		warn("[PlacementService] Grid cells are already occupied for", buildingId)
 		sendPlacementResult(player, false, "Occupied", occupiedByBuilding)

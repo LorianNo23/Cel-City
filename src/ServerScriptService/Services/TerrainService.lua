@@ -49,6 +49,7 @@ local CONFIG = {
 	StreamHalfWidth = 3,
 	StreamBankWidth = 7, -- Grass-free gravel band of ~2 m (1 stud = 28 cm) around the stream edge.
 	StreamDepth = 3.5,
+	StreamWaterLevelBelowGround = 0.4, -- Water surface sits this far below the surrounding ground.
 	StreamStepSize = 3,
 
 	-- Forest patches in the hill ring. Count, size, and density are
@@ -119,6 +120,23 @@ function TerrainService.GetRiverXAt(z: number): number
 	local maxIndex = math.floor(totalHalfSize() / CONFIG.RiverSampleStep)
 
 	return riverPathX[math.clamp(index, minIndex, maxIndex)] or 0
+end
+
+-- Used by PlacementService to keep buildings out of the river and streams.
+-- The gravel banks count as water so buildings never touch the shoreline.
+function TerrainService.IsWaterArea(x: number, z: number): boolean
+	if math.abs(x - TerrainService.GetRiverXAt(z)) <= CONFIG.RiverHalfWidth + CONFIG.RiverBankWidth then
+		return true
+	end
+
+	local position = Vector2.new(x, z)
+	for _, point in streamPoints do
+		if (position - point).Magnitude <= CONFIG.StreamHalfWidth + CONFIG.StreamBankWidth then
+			return true
+		end
+	end
+
+	return false
 end
 
 local function fillGroundSlab(terrain: Terrain)
@@ -356,7 +374,7 @@ local function generateWater(terrain: Terrain)
 				point.Y,
 				CONFIG.StreamHalfWidth,
 				groundHeight - CONFIG.StreamDepth,
-				groundHeight - 1,
+				groundHeight - CONFIG.StreamWaterLevelBelowGround,
 				groundHeight
 			)
 		end
