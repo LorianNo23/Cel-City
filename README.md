@@ -25,7 +25,12 @@ Dieses Repo nutzt einen vereinfachten Git-Flow. Die Regeln stehen in `BRANCHES.m
 
 ## Aktueller Flow
 
-Im aktuellen Prototyp kann der Spieler in Studio die Taste `B` druecken. Der Client fragt dann beim Server an, ein `House` vor dem Spieler zu platzieren. Der Server snappt die Position auf das Grid, prueft grob belegte Zellen und erstellt ein einfaches Placeholder-Gebaeude in `Workspace/PlacedBuildings`, falls noch kein echtes Model existiert.
+Im aktuellen Prototyp sieht der Spieler eine lokale Ghost Preview fuer ein `House`. Die Preview folgt der Maus, snappt auf das Grid und zeigt einfache Bounds-Gueltigkeit:
+
+- `R` rotiert die Preview um 90 Grad.
+- `B` fragt beim Server an, das aktuell angezeigte `House` zu platzieren.
+
+Der Client sendet nur `buildingId`, Position und Rotation. Der Server snappt/validiert erneut, prueft Bounds und belegte Zellen und erstellt ein einfaches Placeholder-Gebaeude in `Workspace/PlacedBuildings`, falls noch kein echtes Model existiert.
 
 Es gibt noch keine finale UI, keine echten Gebaeude-Modelle, keinen Economy-Check und keinen DataStore. Diese Struktur ist bewusst klein gehalten, damit die naechsten Systeme sauber darauf aufbauen koennen.
 
@@ -52,4 +57,4 @@ Optionales Debug-Grid:
 3. Rojo synchronisieren lassen und Studio neu starten oder Play neu starten.
 4. Die Debug-Linien erscheinen in `Workspace/GridDebug`.
 
-Der naechste sinnvolle Schritt nach diesem Branch ist `feature/building-placement`: Ghost Preview, Rotation per Taste, bessere Platzierungsfeedbacks und echte Building Models.
+Der naechste sinnvolle Schritt nach diesem Branch ist `feature/economy`: Preise serverseitig pruefen, Geld anzeigen und Platzierung bei zu wenig Geld ablehnen.

@@ -67,16 +67,8 @@ local function isValidRotation(rotation: number): boolean
 	return VALID_ROTATIONS[rotation] == true
 end
 
-local function getFootprintSize(size: Vector2, rotation: number): Vector2
-	if rotation == 90 or rotation == 270 then
-		return Vector2.new(size.Y, size.X)
-	end
-
-	return size
-end
-
 local function getBuildingCenterWorld(origin: Vector2, size: Vector2, rotation: number, y: number): Vector3
-	local footprintSize = getFootprintSize(size, rotation)
+	local footprintSize = Grid.getFootprintSize(size, rotation)
 	local originWorld = Grid.gridToWorld(origin, y)
 	local halfOffset = Vector3.new(
 		(footprintSize.X - 1) * Grid.TileSize / 2,
@@ -163,7 +155,7 @@ end
 
 local function createPlaceholderBuilding(buildingId: string, buildingConfig, centerWorld: Vector3, rotation: number): Instance
 	local height = 6
-	local footprintSize = getFootprintSize(buildingConfig.Size, rotation)
+	local footprintSize = Grid.getFootprintSize(buildingConfig.Size, rotation)
 	local part = Instance.new("Part")
 	part.Name = `{buildingId}_Placeholder`
 	part.Anchored = true

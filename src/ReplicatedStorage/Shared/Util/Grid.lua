@@ -15,7 +15,7 @@ Grid.MaxX = 50
 Grid.MinY = -50
 Grid.MaxY = 50
 
-local function getFootprintSize(size: Vector2, rotation: number?): Vector2
+function Grid.getFootprintSize(size: Vector2, rotation: number?): Vector2
 	local normalizedRotation = rotation or 0
 
 	if normalizedRotation == 90 or normalizedRotation == 270 then
@@ -47,7 +47,7 @@ end
 
 function Grid.getOccupiedCells(origin: Vector2, size: Vector2, rotation: number?): { Vector2 }
 	local cells = {}
-	local footprintSize = getFootprintSize(size, rotation)
+	local footprintSize = Grid.getFootprintSize(size, rotation)
 
 	for x = 0, footprintSize.X - 1 do
 		for y = 0, footprintSize.Y - 1 do
