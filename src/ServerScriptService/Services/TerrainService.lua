@@ -47,7 +47,7 @@ local CONFIG = {
 	-- Small streams flowing from the hills into the river.
 	StreamCount = 4,
 	StreamHalfWidth = 3,
-	StreamBankWidth = 3, -- Gravel bank on each side of a stream.
+	StreamBankWidth = 7, -- Grass-free gravel band of ~2 m (1 stud = 28 cm) around the stream edge.
 	StreamDepth = 3.5,
 	StreamStepSize = 3,
 
@@ -186,6 +186,29 @@ local function layGravelBank(
 		Vector3.new(bankTotalWidth, groundY - (bedY - 2), bankTotalWidth),
 		Enum.Material.Slate
 	)
+end
+
+-- FillBlock leaves the topmost surface voxels partially grass-covered because
+-- terrain voxels (4 studs) blend materials. ReplaceMaterial swaps the material
+-- without touching the geometry, so the band around the channel is guaranteed
+-- to be grass-free.
+local function clearGrassAroundChannel(
+	terrain: Terrain,
+	x: number,
+	z: number,
+	halfWidth: number,
+	bankWidth: number,
+	bedY: number,
+	groundY: number
+)
+	local extent = halfWidth + bankWidth
+	local region = Region3.new(
+		Vector3.new(x - extent, bedY - 2, z - extent),
+		Vector3.new(x + extent, groundY + 4, z + extent)
+	):ExpandToGrid(4)
+
+	terrain:ReplaceMaterial(region, 4, Enum.Material.Grass, Enum.Material.Slate)
+	terrain:ReplaceMaterial(region, 4, Enum.Material.LeafyGrass, Enum.Material.Slate)
 end
 
 local function carveChannel(
@@ -334,6 +357,41 @@ local function generateWater(terrain: Terrain)
 				CONFIG.StreamHalfWidth,
 				groundHeight - CONFIG.StreamDepth,
 				groundHeight - 1,
+				groundHeight
+			)
+		end
+
+		task.wait()
+	end
+
+	-- Pass 3: remove leftover grass from the surface voxels along the banks.
+	for z = -half, half, CONFIG.RiverSampleStep do
+		local x = TerrainService.GetRiverXAt(z)
+		clearGrassAroundChannel(
+			terrain,
+			x,
+			z,
+			CONFIG.RiverHalfWidth,
+			CONFIG.RiverBankWidth,
+			-CONFIG.RiverDepth,
+			groundHeightAt(x, z)
+		)
+
+		if z % 64 == 0 then
+			task.wait()
+		end
+	end
+
+	for _, path in streamPaths do
+		for _, point in path do
+			local groundHeight = groundHeightAt(point.X, point.Y)
+			clearGrassAroundChannel(
+				terrain,
+				point.X,
+				point.Y,
+				CONFIG.StreamHalfWidth,
+				CONFIG.StreamBankWidth,
+				groundHeight - CONFIG.StreamDepth,
 				groundHeight
 			)
 		end
