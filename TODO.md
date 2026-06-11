@@ -11,6 +11,9 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - Preview wird rot, wenn lokal bekannte belegte Zellen getroffen werden.
 - Server validiert Placement authoritative.
 - Server erstellt aktuell Placeholder-Gebaeude.
+- Economy-Basis existiert mit Session-Geld, `leaderstats/Money` und serverseitigem Kostencheck.
+- Geld wird nur bei erfolgreicher Platzierung abgezogen.
+- `NotEnoughMoney` wird ueber `PlacementResult` an den Client gemeldet.
 
 ## Abgeschlossen in `feature/economy`
 
