@@ -8,6 +8,10 @@
 	  distance so the buildable area itself always stays flat.
 	- A large meandering river crossing the whole map.
 	- Small streams that start in the hills and flow into the river.
+	- A low, gently rolling grass rise on every meadow compartment between
+	  the waterways, kept around character height so building on it works fine.
+	- A small pond with a dirt shore and cattails in the largest compartment.
+	- A loose forest covering the second-largest compartment.
 	- Several forest patches in the hill ring.
 
 	All values live in CONFIG and the generation is split into small helpers,
@@ -20,7 +24,12 @@ local Workspace = game:GetService("Workspace")
 
 local TerrainService = {}
 
-local SEED = 1337
+-- A fresh seed every server start makes hills, river, and streams different
+-- each time, while CONFIG keeps the rules (plateau size, river width, hill
+-- heights, ...) the same. Set FIXED_SEED to a number (e.g. 1337) to get a
+-- reproducible world again; the active seed is printed in the logs.
+local FIXED_SEED: number? = nil
+local SEED = FIXED_SEED or Random.new():NextInteger(1, 1_000_000)
 
 local CONFIG = {
 	-- Flat, buildable city plateau.
@@ -45,6 +54,19 @@ local CONFIG = {
 	RiverNoiseScale = 1 / 220,
 	RiverSampleStep = 4,
 
+	-- One gently rolling grass rise per meadow "compartment". The waterways
+	-- split the plateau into separate compartments; the hill height grows
+	-- with the distance from the nearest water, so every compartment gets
+	-- exactly one rise that spreads across all of it. A wide noise wave adds
+	-- natural ups and downs on top. Base + amplitude stays around character
+	-- height (~5 studs) so everything remains comfortably buildable.
+	PlateauHillBaseHeight = 2.8, -- Average rise height inside a compartment.
+	PlateauHillNoiseAmplitude = 2.2, -- Natural up/down variation around the base.
+	PlateauHillNoiseScale = 1 / 50, -- Lower = wider, smoother undulation.
+	PlateauHillFlatMargin = 10, -- Flat meadow strip next to the gravel banks.
+	PlateauHillRampDistance = 44, -- Distance over which the rise climbs to full height.
+	PlateauHillColumnSize = 4, -- Hills are filled in square columns of this size.
+
 	-- Small streams flowing from the hills into the river.
 	StreamCount = 4,
 	StreamHalfWidth = 3,
@@ -52,6 +74,27 @@ local CONFIG = {
 	StreamDepth = 3.5,
 	StreamWaterLevelBelowGround = 0.4, -- Water surface sits this far below the surrounding ground.
 	StreamStepSize = 3,
+
+	-- Small pond in the largest meadow compartment, a bit off its center.
+	-- The dirt shore ring (no grass, no gravel) is StreamBankWidth / 2 wide.
+	PondRadius = 11,
+	PondDepth = 3.5,
+	PondWaterLevelBelowGround = 0.5,
+	PondCenterOffsetMin = 18, -- How far off the compartment center the pond sits.
+	PondCenterOffsetMax = 36,
+	PondPlantCountMin = 480,
+	PondPlantCountMax = 800,
+	PondPlantScaleMin = 3, -- Every plant gets its own random size in this range.
+	PondPlantScaleMax = 4,
+	PondPlantSpreadMin = 5.4, -- How far past the shore plants reach (~1.5 m); varies
+	PondPlantSpreadMax = 10.7, -- by direction up to ~3 m, so it is no perfect circle.
+	PondPlantShrinkWithDistance = 0.7, -- Plants at the far edge are 70% smaller.
+	PondPlantMinHeight = 1.07, -- ~30 cm; smaller plants do not spawn at all.
+	PondSoilPatchRadius = 1.07, -- ~30 cm of brown soil under each plant.
+
+	-- Loose forest covering one smaller meadow compartment completely.
+	MeadowForestTreeChance = 0.15, -- Chance per 16x16 cell to hold a tree (sparse, loose forest).
+	MeadowForestWaterClearance = 4, -- Trees keep this far from banks and pond shore.
 
 	-- Forest patches in the hill ring. Count, size, and density are
 	-- randomized per world within these ranges.
@@ -69,8 +112,8 @@ local CONFIG = {
 	GrassTuftMinDistanceFromPlateau = 24,
 }
 
--- Forests are intentionally different on every server start, while the
--- terrain itself (hills, river, streams) stays reproducible via SEED.
+-- Forests and details use their own unseeded RNG, so they stay random even
+-- when FIXED_SEED pins the terrain layout to a reproducible world.
 local rng = Random.new()
 
 -- River path samples, indexed by math.floor(z / RiverSampleStep).
@@ -78,6 +121,11 @@ local riverPathX: { [number]: number } = {}
 
 -- Carved stream sample points, used to keep trees out of the water.
 local streamPoints: { Vector2 } = {}
+
+-- Center and blocked radius (pond + dirt shore) of the generated pond, so
+-- IsWaterArea also keeps buildings out of the pond.
+local pondCenter: Vector2? = nil
+local pondBlockRadius = 0
 
 local TERRAIN_COLORS = {
 	[Enum.Material.Grass] = Color3.fromRGB(94, 166, 82),
@@ -166,6 +214,12 @@ function TerrainService.IsWaterArea(x: number, z: number): boolean
 		if (position - point).Magnitude <= CONFIG.StreamHalfWidth + CONFIG.StreamBankWidth then
 			return true
 		end
+	end
+
+	-- The pond and its dirt shore count as water area too, so buildings
+	-- stay out of them just like they stay off the river banks.
+	if pondCenter and (position - pondCenter).Magnitude <= pondBlockRadius then
+		return true
 	end
 
 	return false
@@ -450,6 +504,399 @@ local function generateWater(terrain: Terrain)
 	end
 end
 
+-- How far a point is from the nearest water, measured from the outer edge of
+-- the gravel banks (0 or negative = on the bank or in the water).
+local function waterClearanceAt(x: number, z: number): number
+	local clearance = math.abs(x - TerrainService.GetRiverXAt(z))
+		- (CONFIG.RiverHalfWidth + CONFIG.RiverBankWidth)
+
+	local position = Vector2.new(x, z)
+	for _, point in streamPoints do
+		local streamClearance = (position - point).Magnitude
+			- (CONFIG.StreamHalfWidth + CONFIG.StreamBankWidth)
+		clearance = math.min(clearance, streamClearance)
+	end
+
+	return clearance
+end
+
+-- Height of the meadow rise at a point. The base height only depends on the
+-- distance to the nearest water (and to the plateau edge), so every meadow
+-- compartment between the waterways automatically gets exactly one rise
+-- that spreads across all of it: flat strip next to the banks, a gentle
+-- smoothstep ramp, then a wide noise wave that rolls the surface up and
+-- down so the rise reads as natural terrain instead of a plateau. The whole
+-- height (including the wave) is scaled by the ramp, so it still runs out
+-- to zero before any water. Must run after the water pass, because it needs
+-- the river path and stream points.
+local function plateauHillHeightAt(x: number, z: number): number
+	local clearance = math.min(
+		waterClearanceAt(x, z) - CONFIG.PlateauHillFlatMargin,
+		-- Also ramp down toward the plateau edge so the rise does not end in
+		-- a visible step where the hill ring begins.
+		CONFIG.PlateauHalfSize - math.max(math.abs(x), math.abs(z))
+	)
+
+	local alpha = math.clamp(clearance / CONFIG.PlateauHillRampDistance, 0, 1)
+
+	-- Smoothstep keeps the slope gentle at both ends. Combined with the low
+	-- overall height, placed buildings never end up visibly tilted or floating.
+	local ramp = alpha * alpha * (3 - 2 * alpha)
+
+	-- Two noise octaves (each roughly -0.5..0.5) for natural ups and downs.
+	local wave = (
+		math.noise(x * CONFIG.PlateauHillNoiseScale, z * CONFIG.PlateauHillNoiseScale, SEED + 200)
+		+ 0.5 * math.noise(x * CONFIG.PlateauHillNoiseScale * 2, z * CONFIG.PlateauHillNoiseScale * 2, SEED + 300)
+	) / 1.5
+
+	return ramp * (CONFIG.PlateauHillBaseHeight + wave * 2 * CONFIG.PlateauHillNoiseAmplitude)
+end
+
+local function spawnPlateauHills(terrain: Terrain)
+	local columnSize = CONFIG.PlateauHillColumnSize
+	local half = CONFIG.PlateauHalfSize
+
+	for x = -half, half - columnSize, columnSize do
+		for z = -half, half - columnSize, columnSize do
+			local columnX = x + columnSize / 2
+			local columnZ = z + columnSize / 2
+
+			local columnHeight = plateauHillHeightAt(columnX, columnZ)
+			if columnHeight < 0.5 then
+				continue
+			end
+
+			-- Hard rule: water must never touch the hills. The clearance ramp
+			-- already keeps the height at zero next to the banks; this check
+			-- is the final guarantee that no terrain is ever raised over the
+			-- river, the streams, or their gravel banks.
+			if TerrainService.IsWaterArea(columnX, columnZ) then
+				continue
+			end
+
+			terrain:FillBlock(
+				CFrame.new(columnX, columnHeight / 2, columnZ),
+				Vector3.new(columnSize, columnHeight, columnSize),
+				Enum.Material.Grass
+			)
+		end
+
+		-- Yield once per row so the full-plateau pass does not freeze the server.
+		task.wait()
+	end
+end
+
+-- Seeded so FIXED_SEED reproduces the pond position and plants too.
+local pondRng = Random.new(SEED + 1)
+
+type Compartment = {
+	CenterX: number,
+	CenterZ: number,
+	CellCount: number,
+	Cells: { Vector2 }, -- World-space centers of the coarse grid cells.
+}
+
+local compartmentsCache: { Compartment }? = nil
+
+-- Finds the meadow compartments the waterways cut the plateau into, by
+-- flood-filling a coarse grid. Cells count as land when they are clear of
+-- the water and the gravel banks. Returns them sorted largest-first.
+local function getCompartments(): { Compartment }
+	if compartmentsCache then
+		return compartmentsCache
+	end
+
+	local cellSize = 16
+	local half = CONFIG.PlateauHalfSize
+	local cellsPerAxis = math.floor((half * 2) / cellSize)
+
+	local function cellPosition(ix: number, iz: number): (number, number)
+		return -half + (ix - 0.5) * cellSize, -half + (iz - 0.5) * cellSize
+	end
+
+	local land: { [string]: boolean } = {}
+	for ix = 1, cellsPerAxis do
+		for iz = 1, cellsPerAxis do
+			local x, z = cellPosition(ix, iz)
+			if waterClearanceAt(x, z) > 0 then
+				land[`{ix}:{iz}`] = true
+			end
+		end
+	end
+
+	local visited: { [string]: boolean } = {}
+	local compartments: { Compartment } = {}
+
+	for startX = 1, cellsPerAxis do
+		for startZ = 1, cellsPerAxis do
+			local startKey = `{startX}:{startZ}`
+			if not land[startKey] or visited[startKey] then
+				continue
+			end
+
+			visited[startKey] = true
+			local queue = { { startX, startZ } }
+			local cells: { Vector2 } = {}
+			local sumX, sumZ = 0, 0
+
+			while #queue > 0 do
+				local cell = table.remove(queue)
+				local x, z = cellPosition(cell[1], cell[2])
+				table.insert(cells, Vector2.new(x, z))
+				sumX += x
+				sumZ += z
+
+				for _, offset in { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } do
+					local nx = cell[1] + offset[1]
+					local nz = cell[2] + offset[2]
+					local neighborKey = `{nx}:{nz}`
+
+					if
+						nx >= 1
+						and nx <= cellsPerAxis
+						and nz >= 1
+						and nz <= cellsPerAxis
+						and land[neighborKey]
+						and not visited[neighborKey]
+					then
+						visited[neighborKey] = true
+						table.insert(queue, { nx, nz })
+					end
+				end
+			end
+
+			table.insert(compartments, {
+				CenterX = sumX / #cells,
+				CenterZ = sumZ / #cells,
+				CellCount = #cells,
+				Cells = cells,
+			})
+		end
+	end
+
+	table.sort(compartments, function(a, b)
+		return a.CellCount > b.CellCount
+	end)
+
+	compartmentsCache = compartments
+	return compartments
+end
+
+-- Irregular patch of brown soil (~30 cm radius; 1 stud = 28 cm) under a
+-- pond plant. Random size and offset per patch plus the 4-stud voxel
+-- blending keep the patches from looking stamped. Note: terrain voxels are
+-- 4 studs, so this is the smallest patch the engine can paint.
+local function paintSoilPatch(terrain: Terrain, position: Vector3)
+	local radius = CONFIG.PondSoilPatchRadius * pondRng:NextNumber(0.7, 1.3)
+	local offsetX = pondRng:NextNumber(-0.4, 0.4)
+	local offsetZ = pondRng:NextNumber(-0.4, 0.4)
+
+	local region = Region3.new(
+		Vector3.new(position.X + offsetX - radius, position.Y - 6, position.Z + offsetZ - radius),
+		Vector3.new(position.X + offsetX + radius, position.Y + 4, position.Z + offsetZ + radius)
+	):ExpandToGrid(4)
+
+	terrain:ReplaceMaterial(region, 4, Enum.Material.Grass, Enum.Material.Ground)
+	terrain:ReplaceMaterial(region, 4, Enum.Material.LeafyGrass, Enum.Material.Ground)
+end
+
+-- Stylized cattail, the typical plant next to a pond: a few thin green
+-- stalks, each with a brown seed head on top. Random stalk heights and
+-- counts on top of the caller-provided scale make every plant different.
+local function createPondPlant(position: Vector3, scale: number): Model
+	local plant = Instance.new("Model")
+	plant.Name = "PondPlant"
+
+	local stalkCount = pondRng:NextInteger(2, 4)
+	for _ = 1, stalkCount do
+		local stalkHeight = pondRng:NextNumber(1.4, 2.4) * scale
+		local angle = pondRng:NextNumber(0, math.pi * 2)
+		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * pondRng:NextNumber(0, 0.6) * scale
+
+		local stalk = Instance.new("Part")
+		stalk.Name = "Stalk"
+		stalk.Anchored = true
+		stalk.CanCollide = false
+		stalk.Material = Enum.Material.SmoothPlastic
+		stalk.Color = Color3.fromRGB(88, 128, 58)
+		stalk.Size = Vector3.new(0.08 * scale, stalkHeight, 0.08 * scale)
+		stalk.CFrame = CFrame.new(position + offset + Vector3.new(0, stalkHeight / 2, 0))
+			* CFrame.Angles(math.rad(pondRng:NextNumber(-7, 7)), angle, math.rad(pondRng:NextNumber(-7, 7)))
+		stalk.Parent = plant
+
+		local head = Instance.new("Part")
+		head.Name = "Head"
+		head.Shape = Enum.PartType.Cylinder
+		head.Anchored = true
+		head.CanCollide = false
+		head.Material = Enum.Material.SmoothPlastic
+		head.Color = Color3.fromRGB(96, 64, 40)
+		head.Size = Vector3.new(0.55, 0.16, 0.16) * scale
+		-- Cylinders point along X; tip it upright on top of the stalk.
+		head.CFrame = CFrame.new(position + offset + Vector3.new(0, stalkHeight + 0.2 * scale, 0))
+			* CFrame.Angles(0, 0, math.rad(90))
+		head.Parent = plant
+	end
+
+	return plant
+end
+
+-- Digs a small pond into the largest meadow compartment, a bit off its
+-- center. The shore is a dirt ring (Ground -- no grass, no gravel) that is
+-- half as wide as the grass-free gravel band of the streams, with cattails
+-- growing on it.
+local function spawnPond(terrain: Terrain, mapFolder: Folder)
+	local dirtBandWidth = CONFIG.StreamBankWidth / 2
+	local totalRadius = CONFIG.PondRadius + dirtBandWidth
+
+	local largestCompartment = getCompartments()[1]
+	if not largestCompartment then
+		warn("[TerrainService] No meadow compartment found, skipping pond")
+		return
+	end
+	local centerX, centerZ = largestCompartment.CenterX, largestCompartment.CenterZ
+
+	-- Push the pond off the compartment center, keeping it clear of the
+	-- waterways and inside the plateau. Falls back to the center itself.
+	local pondX, pondZ = centerX, centerZ
+	for _ = 1, 20 do
+		local angle = pondRng:NextNumber(0, math.pi * 2)
+		local distance = pondRng:NextNumber(CONFIG.PondCenterOffsetMin, CONFIG.PondCenterOffsetMax)
+		local x = centerX + math.cos(angle) * distance
+		local z = centerZ + math.sin(angle) * distance
+
+		if
+			waterClearanceAt(x, z) >= totalRadius + 8
+			and math.max(math.abs(x), math.abs(z)) < CONFIG.PlateauHalfSize - totalRadius
+		then
+			pondX, pondZ = x, z
+			break
+		end
+	end
+
+	local columnSize = 4
+
+	-- The water surface must be level, so it is based on the lowest ground
+	-- inside the pond basin.
+	local minSurface = math.huge
+	for x = pondX - CONFIG.PondRadius, pondX + CONFIG.PondRadius, columnSize do
+		for z = pondZ - CONFIG.PondRadius, pondZ + CONFIG.PondRadius, columnSize do
+			if math.sqrt((x - pondX) ^ 2 + (z - pondZ) ^ 2) <= CONFIG.PondRadius then
+				minSurface = math.min(minSurface, plateauHillHeightAt(x, z))
+			end
+		end
+	end
+
+	local waterLevel = minSurface - CONFIG.PondWaterLevelBelowGround
+	local bedY = minSurface - CONFIG.PondDepth
+
+	-- Pass 1: turn the whole pond area (basin + shore ring) into dirt.
+	for x = pondX - totalRadius, pondX + totalRadius, columnSize do
+		for z = pondZ - totalRadius, pondZ + totalRadius, columnSize do
+			local distance = math.sqrt((x - pondX) ^ 2 + (z - pondZ) ^ 2)
+			if distance > totalRadius then
+				continue
+			end
+
+			local surface = plateauHillHeightAt(x, z)
+			terrain:FillBlock(
+				CFrame.new(x, (surface + bedY - 2) / 2, z),
+				Vector3.new(columnSize, surface - (bedY - 2), columnSize),
+				Enum.Material.Ground
+			)
+
+			-- Voxel blending leaves grass on the surface; force it to dirt
+			-- (and never gravel) within this column only, so the dirt shore
+			-- stays round instead of becoming a square patch.
+			local region = Region3.new(
+				Vector3.new(x - columnSize / 2, bedY - 4, z - columnSize / 2),
+				Vector3.new(x + columnSize / 2, surface + 4, z + columnSize / 2)
+			):ExpandToGrid(4)
+			terrain:ReplaceMaterial(region, 4, Enum.Material.Grass, Enum.Material.Ground)
+			terrain:ReplaceMaterial(region, 4, Enum.Material.LeafyGrass, Enum.Material.Ground)
+			terrain:ReplaceMaterial(region, 4, Enum.Material.Slate, Enum.Material.Ground)
+		end
+	end
+
+	task.wait()
+
+	-- Pass 2: carve the basin and fill it with still water.
+	for x = pondX - CONFIG.PondRadius, pondX + CONFIG.PondRadius, columnSize do
+		for z = pondZ - CONFIG.PondRadius, pondZ + CONFIG.PondRadius, columnSize do
+			local distance = math.sqrt((x - pondX) ^ 2 + (z - pondZ) ^ 2)
+			if distance > CONFIG.PondRadius then
+				continue
+			end
+
+			local surface = plateauHillHeightAt(x, z)
+			terrain:FillBlock(
+				CFrame.new(x, (surface + 4 + bedY) / 2, z),
+				Vector3.new(columnSize, (surface + 4) - bedY, columnSize),
+				Enum.Material.Air
+			)
+			terrain:FillBlock(
+				CFrame.new(x, (waterLevel + bedY) / 2, z),
+				Vector3.new(columnSize, waterLevel - bedY, columnSize),
+				Enum.Material.Water
+			)
+		end
+	end
+
+	-- Block building on the pond and its shore from now on.
+	pondCenter = Vector2.new(pondX, pondZ)
+	pondBlockRadius = totalRadius
+
+	-- Cattails on the dirt shore ring.
+	local pondFolder = Instance.new("Folder")
+	pondFolder.Name = "Pond"
+	pondFolder.Parent = mapFolder
+
+	-- Plants spread irregularly around the pond: the maximum reach varies by
+	-- direction (noise), so the belt is no perfect circle. They get rarer
+	-- and smaller with distance, and every plant sits on its own irregular
+	-- patch of brown soil.
+	local plantCount = pondRng:NextInteger(CONFIG.PondPlantCountMin, CONFIG.PondPlantCountMax)
+	for plantIndex = 1, plantCount do
+		local angle = pondRng:NextNumber(0, math.pi * 2)
+
+		local reachNoise = math.noise(math.cos(angle) * 1.7, math.sin(angle) * 1.7, SEED + 400) + 0.5
+		local maxReach = CONFIG.PondPlantSpreadMin
+			+ (CONFIG.PondPlantSpreadMax - CONFIG.PondPlantSpreadMin) * math.clamp(reachNoise, 0, 1)
+
+		-- Bias toward the shore: dense belt at the water, thinning outward.
+		local normalizedDistance = pondRng:NextNumber() ^ 1.6
+		local distance = CONFIG.PondRadius + 0.8 + normalizedDistance * maxReach
+
+		local x = pondX + math.cos(angle) * distance
+		local z = pondZ + math.sin(angle) * distance
+
+		-- Keep plants off the waterways and inside the plateau.
+		if waterClearanceAt(x, z) < 1 or math.max(math.abs(x), math.abs(z)) > CONFIG.PlateauHalfSize - 4 then
+			continue
+		end
+
+		local sizeFactor = 1 - CONFIG.PondPlantShrinkWithDistance * normalizedDistance
+		local scale = pondRng:NextNumber(CONFIG.PondPlantScaleMin, CONFIG.PondPlantScaleMax) * sizeFactor
+
+		-- The shortest possible stalk is 1.4 studs * scale; plants that
+		-- would end up below the minimum height do not spawn at all.
+		if 1.4 * scale < CONFIG.PondPlantMinHeight then
+			continue
+		end
+
+		local position = Vector3.new(x, plateauHillHeightAt(x, z), z)
+
+		paintSoilPatch(terrain, position)
+		createPondPlant(position, scale).Parent = pondFolder
+
+		if plantIndex % 25 == 0 then
+			task.wait()
+		end
+	end
+
+	logStep(`Pond at {math.floor(pondX)}, {math.floor(pondZ)} (largest compartment center {math.floor(centerX)}, {math.floor(centerZ)})`)
+end
+
 local function isNearWater(x: number, z: number): boolean
 	if math.abs(x - TerrainService.GetRiverXAt(z)) < CONFIG.RiverHalfWidth + 15 then
 		return true
@@ -566,10 +1013,10 @@ local function createGrassTuft(position: Vector3): Model
 		blade.CanCollide = false
 		blade.Material = Enum.Material.SmoothPlastic
 		blade.Color = Color3.fromRGB(58, rng:NextInteger(135, 165), 66)
-		blade.Size = Vector3.new(0.22, rng:NextNumber(2.0, 3.8), 0.22)
+		blade.Size = Vector3.new(0.015, rng:NextNumber(0.13, 0.25), 0.015)
 
 		local angle = rng:NextNumber(0, math.pi * 2)
-		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * rng:NextNumber(0, 0.7)
+		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * rng:NextNumber(0, 0.047)
 		blade.CFrame = CFrame.new(position + offset + Vector3.new(0, blade.Size.Y / 2, 0))
 			* CFrame.Angles(math.rad(rng:NextNumber(-16, 16)), angle, math.rad(rng:NextNumber(-16, 16)))
 		blade.Parent = tuft
@@ -657,6 +1104,47 @@ local function spawnForests(forestsFolder: Folder)
 	end
 end
 
+-- Covers one smaller meadow compartment (the second largest) completely
+-- with a loose forest: roughly one tree per 16x16 cell, jittered, so it
+-- reads as a forest without being dense. Uses the unseeded forest RNG, so
+-- the trees vary every server start like the hill-ring forests.
+local function spawnMeadowForest(forestsFolder: Folder)
+	local compartment = getCompartments()[2]
+	if not compartment then
+		warn("[TerrainService] No smaller meadow compartment found, skipping meadow forest")
+		return
+	end
+
+	local treesPlaced = 0
+	for _, cell in compartment.Cells do
+		if rng:NextNumber() > CONFIG.MeadowForestTreeChance then
+			continue
+		end
+
+		local x = cell.X + rng:NextNumber(-6, 6)
+		local z = cell.Y + rng:NextNumber(-6, 6)
+
+		if waterClearanceAt(x, z) < CONFIG.MeadowForestWaterClearance then
+			continue
+		end
+
+		-- Keep the forest off the pond and its dirt shore.
+		if pondCenter and (Vector2.new(x, z) - pondCenter).Magnitude < pondBlockRadius + CONFIG.MeadowForestWaterClearance then
+			continue
+		end
+
+		local tree = createTree(Vector3.new(x, plateauHillHeightAt(x, z), z))
+		tree.Parent = forestsFolder
+		treesPlaced += 1
+
+		if treesPlaced % 10 == 0 then
+			task.wait()
+		end
+	end
+
+	logStep(`Meadow forest with {treesPlaced} trees at {math.floor(compartment.CenterX)}, {math.floor(compartment.CenterZ)}`)
+end
+
 local function getGeneratedMapFolder(): Folder
 	local folder = Workspace:FindFirstChild("GeneratedMap")
 	if not folder then
@@ -725,12 +1213,24 @@ function TerrainService.Init()
 		generateWater(terrain)
 	end)
 
+	runGenerationStep("plateau hills", function()
+		spawnPlateauHills(terrain)
+	end)
+
+	runGenerationStep("pond", function()
+		spawnPond(terrain, mapFolder)
+	end)
+
 	local forestsFolder = Instance.new("Folder")
 	forestsFolder.Name = "Forests"
 	forestsFolder.Parent = mapFolder
 
 	runGenerationStep("forests", function()
 		spawnForests(forestsFolder)
+	end)
+
+	runGenerationStep("meadow forest", function()
+		spawnMeadowForest(forestsFolder)
 	end)
 
 	local detailsFolder = Instance.new("Folder")
