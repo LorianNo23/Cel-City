@@ -9,14 +9,14 @@ local Buildings = {
 	House = {
 		DisplayName = "House",
 		Cost = 100,
-		ModelName = "House",
+		ModelName = "CelCityHouse1",
 		Size = Vector2.new(2, 2), -- Grid cells used by this building.
 	},
 
 	Shop = {
 		DisplayName = "Shop",
 		Cost = 250,
-		ModelName = "Shop",
+		ModelName = "CelCityShop1",
 		Size = Vector2.new(3, 2),
 	},
 }

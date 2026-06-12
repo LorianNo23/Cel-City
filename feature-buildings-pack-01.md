@@ -13,8 +13,8 @@ Add a small prototype building picker and make the restored building models plac
 ## TODO
 
 - [x] Create this temporary feature checklist.
-- [ ] Wire the restored GLB assets into the Roblox project as server building models.
-- [ ] Add building config entries for the asset-backed house and shop.
+- [x] Wire the restored GLB assets into the Roblox project as server building models.
+- [x] Add building config entries for the asset-backed house and shop.
 - [ ] Add a small prototype client GUI to select the active building.
 - [ ] Verify placement requests still use existing server validation.
 - [ ] Run available checks or lightweight validation.
