@@ -24,3 +24,4 @@ Add a small prototype building picker and make the restored building models plac
 - `default.project.json` parses successfully with PowerShell `ConvertFrom-Json`.
 - `git diff develop..HEAD -- src/ServerScriptService/Services/TerrainService.lua` is empty.
 - `rojo --version` is not available on PATH in this shell, so no Rojo build was run.
+- GLB mesh bounds show both restored models are square in footprint, so House and Shop both use `2x2` grid cells.

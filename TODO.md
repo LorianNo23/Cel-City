@@ -59,7 +59,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 - [ ] Client-Preview soll auch Server-Fehler kurzfristig anzeigen.
 - [ ] Belegte Zellen fuer alle Spieler synchronisieren, nicht nur lokal nach eigener Platzierung.
-- [ ] Echte Gebaeude-Models aus `ServerStorage/BuildingModels` nutzen.
+- [x] Echte Gebaeude-Models aus `ServerStorage/BuildingModels` nutzen.
+- [x] Shop-Footprint an quadratischen Modellboden anpassen, damit Preview und 3D-Modell sauber alignen.
 - [ ] Placeholder-Farbe/Material spaeter entfernen.
 - [ ] Rotation visuell an echten Models pruefen.
 - [ ] Map-Bounds besser sichtbar machen.

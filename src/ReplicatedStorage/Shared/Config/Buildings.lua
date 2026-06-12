@@ -17,7 +17,7 @@ local Buildings = {
 		DisplayName = "Shop",
 		Cost = 250,
 		ModelName = "CelCityShop1",
-		Size = Vector2.new(3, 2),
+		Size = Vector2.new(2, 2),
 	},
 }
 
