@@ -17,4 +17,10 @@ Add a small prototype building picker and make the restored building models plac
 - [x] Add building config entries for the asset-backed house and shop.
 - [x] Add a small prototype client GUI to select the active building.
 - [x] Verify placement requests still use existing server validation.
-- [ ] Run available checks or lightweight validation.
+- [x] Run available checks or lightweight validation.
+
+## Validation
+
+- `default.project.json` parses successfully with PowerShell `ConvertFrom-Json`.
+- `git diff develop..HEAD -- src/ServerScriptService/Services/TerrainService.lua` is empty.
+- `rojo --version` is not available on PATH in this shell, so no Rojo build was run.
