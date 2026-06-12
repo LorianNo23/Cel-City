@@ -50,8 +50,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 - [x] Kleine Money-Anzeige bauen.
 - [x] Rotes Minus-Popup anzeigen, wenn Geld ausgegeben wird.
-- [x] Einfache Building-Auswahl bauen.
-- [x] Ausgewaehltes Gebaeude im `PlacementController` wechseln.
+- [ ] Einfache Building-Auswahl bauen.
+- [ ] Ausgewaehltes Gebaeude im `PlacementController` wechseln.
 - [ ] Platzierungsfehler kurz anzeigen, z.B. `Occupied`, `OutOfBounds`, `NotEnoughMoney`.
 - [ ] UI schlicht halten, keine finale Shop-Oberflaeche.
 
@@ -75,12 +75,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Content
 
-- [x] Erstes House-Source-Asset in `assets/models` ablegen.
-- [x] Erstes Shop-Source-Asset in `assets/models` ablegen.
-- [x] Building Config fuer Modellvarianten vorbereiten.
-- [x] Importierte Building-Modelle auf Grid-Footprint skalieren.
-- [ ] Importierte Studio-Modelle auf Pivot, Scale und Rotation testen.
-- [ ] Weitere House-/Shop-Varianten importieren.
+- [ ] Einfaches House-Model bauen.
+- [ ] Einfaches Shop-Model bauen.
 - [ ] Building Config um Kategorie, Beschreibung und IconName erweitern.
 - [ ] Erste Balancing-Werte fuer Kosten und Groessen festlegen.
 - [ ] Content-Pack Branches erst starten, wenn Economy und Save-System stabil sind.

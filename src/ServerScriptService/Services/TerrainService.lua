@@ -22,12 +22,6 @@ local TerrainService = {}
 
 local SEED = 1337
 
-local DEBUG_CONFIG = {
-	GENERATE_ON_SERVER_START = true,
-	CLEAR_TERRAIN_ON_GENERATE = true,
-	PRINT_DEBUG_LOGS = true,
-}
-
 local CONFIG = {
 	-- Flat, buildable city plateau.
 	PlateauHalfSize = 256, -- Studs from the center to the edge of the buildable area.
@@ -99,9 +93,7 @@ local function totalHalfSize(): number
 end
 
 local function logStep(message: string)
-	if DEBUG_CONFIG.PRINT_DEBUG_LOGS then
-		print("[TerrainService]", message)
-	end
+	print("[TerrainService]", message)
 end
 
 local function applyStylizedTerrainPalette(terrain: Terrain)
@@ -685,10 +677,9 @@ end
 local function runGenerationStep(stepName: string, callback)
 	logStep(`Starting {stepName}`)
 
-	local success, err = xpcall(callback, debug.traceback)
+	local success, err = pcall(callback)
 	if not success then
-		warn(`[TerrainService] Generation step failed: {stepName}`, err)
-		error(`[TerrainService] Failed during generation step "{stepName}": {err}`, 0)
+		error(`[TerrainService] Failed during {stepName}: {err}`, 0)
 	end
 
 	logStep(`Finished {stepName}`)
@@ -697,7 +688,7 @@ end
 local function runOptionalGenerationStep(stepName: string, callback)
 	logStep(`Starting optional {stepName}`)
 
-	local success, err = xpcall(callback, debug.traceback)
+	local success, err = pcall(callback)
 	if not success then
 		warn(`[TerrainService] Optional step failed during {stepName}:`, err)
 		return
@@ -707,11 +698,6 @@ local function runOptionalGenerationStep(stepName: string, callback)
 end
 
 function TerrainService.Init()
-	if not DEBUG_CONFIG.GENERATE_ON_SERVER_START then
-		logStep("Generation skipped because GENERATE_ON_SERVER_START is false")
-		return
-	end
-
 	local terrain = Workspace.Terrain
 
 	logStep(`Generation started with seed {SEED}`)
@@ -719,20 +705,9 @@ function TerrainService.Init()
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
 	-- The whole map is script-generated so it stays reproducible.
-	local mapFolder
-	runGenerationStep("generated map cleanup", function()
-		mapFolder = clearGeneratedMapFolder()
-		if DEBUG_CONFIG.CLEAR_TERRAIN_ON_GENERATE then
-			logStep("Clearing Workspace.Terrain")
-			terrain:Clear()
-			logStep("Finished clearing Workspace.Terrain")
-		end
-	end)
-
-	runGenerationStep("terrain settings", function()
-		terrain.Decoration = false
-		applyStylizedTerrainPalette(terrain)
-	end)
+	local mapFolder = clearGeneratedMapFolder()
+	terrain:Clear()
+	applyStylizedTerrainPalette(terrain)
 
 	runGenerationStep("ground slab", function()
 		fillGroundSlab(terrain)

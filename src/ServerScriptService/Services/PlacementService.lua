@@ -20,7 +20,6 @@ local PlacementService = {}
 local occupiedCells: { [string]: boolean } = {}
 local placedBuildingsFolder: Folder
 local placementResultRemote: RemoteEvent
-local modelRng = Random.new()
 
 local DEBUG_GRID = false
 local MAX_PLACE_DISTANCE = 80
@@ -229,100 +228,18 @@ local function createPlaceholderBuilding(buildingId: string, buildingConfig, cen
 	return part
 end
 
-local function getModelNames(buildingConfig): { string }
-	if typeof(buildingConfig.ModelNames) == "table" and #buildingConfig.ModelNames > 0 then
-		return buildingConfig.ModelNames
-	end
-
-	if typeof(buildingConfig.ModelName) == "string" then
-		return { buildingConfig.ModelName }
-	end
-
-	return {}
-end
-
-local function getSourceModel(buildingId: string, buildingConfig): Instance?
-	local buildingModels = ServerStorage:FindFirstChild("BuildingModels")
-	if not buildingModels then
-		return nil
-	end
-
-	local modelNames = getModelNames(buildingConfig)
-	if #modelNames == 0 then
-		return nil
-	end
-
-	local startIndex = modelRng:NextInteger(1, #modelNames)
-	for offset = 0, #modelNames - 1 do
-		local index = ((startIndex + offset - 1) % #modelNames) + 1
-		local sourceModel = buildingModels:FindFirstChild(modelNames[index])
-
-		if sourceModel then
-			return sourceModel
-		end
-	end
-
-	warn("[PlacementService] No model variant found for", buildingId)
-	return nil
-end
-
-local function getTargetFootprintSize(buildingConfig, rotation: number): Vector2
-	return Grid.getFootprintSize(buildingConfig.Size, rotation) * Grid.TileSize
-end
-
-local function scaleModelToFootprint(model: Model, targetFootprintSize: Vector2)
-	local _, boundsSize = model:GetBoundingBox()
-	local currentX = math.max(boundsSize.X, 0.001)
-	local currentZ = math.max(boundsSize.Z, 0.001)
-	local scale = math.min(targetFootprintSize.X / currentX, targetFootprintSize.Y / currentZ)
-
-	if scale > 0 and scale < math.huge then
-		model:ScaleTo(scale)
-	end
-end
-
-local function scalePartToFootprint(part: BasePart, targetFootprintSize: Vector2)
-	local currentX = math.max(part.Size.X, 0.001)
-	local currentZ = math.max(part.Size.Z, 0.001)
-	local scale = math.min(targetFootprintSize.X / currentX, targetFootprintSize.Y / currentZ)
-
-	if scale > 0 and scale < math.huge then
-		part.Size *= scale
-	end
-end
-
-local function pivotModelBottomTo(model: Model, targetPivot: CFrame)
-	local boundsCFrame, boundsSize = model:GetBoundingBox()
-	local pivotToBottom = model:GetPivot().Position.Y - (boundsCFrame.Position.Y - boundsSize.Y / 2)
-	model:PivotTo(targetPivot + Vector3.new(0, pivotToBottom, 0))
-end
-
-local function anchorBuildingInstance(instance: Instance)
-	if instance:IsA("BasePart") then
-		instance.Anchored = true
-	end
-
-	for _, descendant in instance:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			descendant.Anchored = true
-		end
-	end
-end
-
 local function createBuildingInstance(buildingId: string, buildingConfig, centerWorld: Vector3, rotation: number): Instance
-	local sourceModel = getSourceModel(buildingId, buildingConfig)
+	local buildingModels = ServerStorage:FindFirstChild("BuildingModels")
+	local sourceModel = buildingModels and buildingModels:FindFirstChild(buildingConfig.ModelName)
 	local pivot = CFrame.new(centerWorld) * CFrame.Angles(0, math.rad(rotation), 0)
 
 	if sourceModel then
 		local clone = sourceModel:Clone()
-		local targetFootprintSize = getTargetFootprintSize(buildingConfig, rotation)
-		anchorBuildingInstance(clone)
 
 		if clone:IsA("Model") then
-			scaleModelToFootprint(clone, targetFootprintSize)
-			pivotModelBottomTo(clone, pivot)
+			clone:PivotTo(pivot)
 		elseif clone:IsA("BasePart") then
-			scalePartToFootprint(clone, targetFootprintSize)
+			clone.Anchored = true
 			clone.Position = centerWorld + Vector3.new(0, clone.Size.Y / 2, 0)
 			clone.Orientation = Vector3.new(0, rotation, 0)
 		else

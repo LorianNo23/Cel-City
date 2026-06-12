@@ -6,6 +6,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Services = ServerScriptService:WaitForChild("Services")
 
+local CelShadingService = require(Services:WaitForChild("CelShadingService"))
+local EconomyService = require(Services:WaitForChild("EconomyService"))
+local PlacementService = require(Services:WaitForChild("PlacementService"))
+local SaveService = require(Services:WaitForChild("SaveService"))
+local TerrainService = require(Services:WaitForChild("TerrainService"))
+
 local function getOrCreateRemoteEvent(folder: Instance, remoteName: string): RemoteEvent
 	local remote = folder:FindFirstChild(remoteName)
 	if remote and remote:IsA("RemoteEvent") then
@@ -40,65 +46,19 @@ local placeBuildingRemote = getOrCreateRemoteEvent(remotes, "PlaceBuilding")
 local placementResultRemote = getOrCreateRemoteEvent(remotes, "PlacementResult")
 
 local function startService(serviceName: string, initCallback)
-	local success, err = xpcall(initCallback, debug.traceback)
+	local success, err = pcall(initCallback)
 	if not success then
-		warn(`[Server] Failed to start {serviceName}:`, err)
+		warn("[Server] Failed to start", serviceName, err)
 	end
-end
-
-local function requireService(serviceName: string)
-	local moduleScript = Services:WaitForChild(serviceName)
-	local success, result = pcall(function()
-		return require(moduleScript)
-	end)
-
-	if not success then
-		warn("[Server] Failed to require", serviceName, result)
-		return nil
-	end
-
-	return result
-end
-
-local CelShadingService = requireService("CelShadingService")
-local TerrainService = requireService("TerrainService")
-
-if not TerrainService then
-	error("[Server] TerrainService is required for startup")
 end
 
 startService("CelShadingService", function()
-	if CelShadingService then
-		CelShadingService.Init()
-	end
+	CelShadingService.Init()
 end)
-startService("TerrainService", function()
-	TerrainService.Init()
-end)
-
-local SaveService = requireService("SaveService")
-local EconomyService = requireService("EconomyService")
-local PlacementService = requireService("PlacementService")
-
-startService("SaveService", function()
-	if SaveService then
-		SaveService.Init()
-	end
-end)
-startService("EconomyService", function()
-	if EconomyService then
-		EconomyService.Init(SaveService)
-	end
-end)
-startService("PlacementService", function()
-	if PlacementService then
-		PlacementService.Init(placeBuildingRemote, placementResultRemote)
-	end
-end)
-startService("SaveService restore", function()
-	if SaveService and EconomyService and PlacementService then
-		SaveService.ApplyLoadedDataForExistingPlayers(EconomyService, PlacementService)
-	end
-end)
+TerrainService.Init()
+SaveService.Init()
+EconomyService.Init(SaveService)
+PlacementService.Init(placeBuildingRemote, placementResultRemote)
+SaveService.ApplyLoadedDataForExistingPlayers(EconomyService, PlacementService)
 
 print("[Server] Cel-City server started")
