@@ -7,6 +7,12 @@
       "$path": "src/ReplicatedStorage"
     },
 
+    "ServerStorage": {
+      "BuildingModels": {
+        "$path": "assets/models"
+      }
+    },
+
     "ServerScriptService": {
       "$path": "src/ServerScriptService"
     },

@@ -228,6 +228,49 @@ local function createPlaceholderBuilding(buildingId: string, buildingConfig, cen
 	return part
 end
 
+local function getTargetFootprintSize(buildingConfig, rotation: number): Vector2
+	return Grid.getFootprintSize(buildingConfig.Size, rotation) * Grid.TileSize
+end
+
+local function scaleModelToFootprint(model: Model, targetFootprintSize: Vector2)
+	local _, boundsSize = model:GetBoundingBox()
+	local currentX = math.max(boundsSize.X, 0.001)
+	local currentZ = math.max(boundsSize.Z, 0.001)
+	local scale = math.min(targetFootprintSize.X / currentX, targetFootprintSize.Y / currentZ)
+
+	if scale > 0 and scale < math.huge then
+		model:ScaleTo(scale)
+	end
+end
+
+local function scalePartToFootprint(part: BasePart, targetFootprintSize: Vector2)
+	local currentX = math.max(part.Size.X, 0.001)
+	local currentZ = math.max(part.Size.Z, 0.001)
+	local scale = math.min(targetFootprintSize.X / currentX, targetFootprintSize.Y / currentZ)
+
+	if scale > 0 and scale < math.huge then
+		part.Size *= scale
+	end
+end
+
+local function pivotModelBottomTo(model: Model, targetPivot: CFrame)
+	local boundsCFrame, boundsSize = model:GetBoundingBox()
+	local pivotToBottom = model:GetPivot().Position.Y - (boundsCFrame.Position.Y - boundsSize.Y / 2)
+	model:PivotTo(targetPivot + Vector3.new(0, pivotToBottom, 0))
+end
+
+local function anchorBuildingInstance(instance: Instance)
+	if instance:IsA("BasePart") then
+		instance.Anchored = true
+	end
+
+	for _, descendant in instance:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = true
+		end
+	end
+end
+
 local function createBuildingInstance(buildingId: string, buildingConfig, centerWorld: Vector3, rotation: number): Instance
 	local buildingModels = ServerStorage:FindFirstChild("BuildingModels")
 	local sourceModel = buildingModels and buildingModels:FindFirstChild(buildingConfig.ModelName)
@@ -235,11 +278,14 @@ local function createBuildingInstance(buildingId: string, buildingConfig, center
 
 	if sourceModel then
 		local clone = sourceModel:Clone()
+		local targetFootprintSize = getTargetFootprintSize(buildingConfig, rotation)
+		anchorBuildingInstance(clone)
 
 		if clone:IsA("Model") then
-			clone:PivotTo(pivot)
+			scaleModelToFootprint(clone, targetFootprintSize)
+			pivotModelBottomTo(clone, pivot)
 		elseif clone:IsA("BasePart") then
-			clone.Anchored = true
+			scalePartToFootprint(clone, targetFootprintSize)
 			clone.Position = centerWorld + Vector3.new(0, clone.Size.Y / 2, 0)
 			clone.Orientation = Vector3.new(0, rotation, 0)
 		else
