@@ -27,6 +27,11 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [x] Keine finale UI bauen.
 - [x] Kein DataStore einbauen.
 
+## Abgeschlossen in `feature/sprint-and-lighting`
+
+- [x] Wald-Schatten heller machen (`Ambient`/`OutdoorAmbient` in `CelShadingService` erhoeht).
+- [x] Sprinten mit gedrueckter Shift-Taste bei 2x Geschwindigkeit (`SprintController`).
+
 ## Naechster Branch: `feature/save-system`
 
 - [ ] Datenmodell fuer platzierte Gebaeude definieren.
@@ -95,6 +100,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Technische Qualitaet
 
+- [x] `CLAUDE.md` erstellen, damit Claude Code Projektregeln vor jeder Arbeit kennt.
+- [x] `CLAUDE.md` um vollstaendiges Projektwissen erweitern (Architektur-Details, Workflow-Regeln, Toolchain).
 - [ ] Gemeinsame Result/Reason-Konstanten definieren.
 - [ ] Server-Warnungen konsistent halten.
 - [ ] README aktualisieren, wenn Architektur oder Testflow sich aendert.
