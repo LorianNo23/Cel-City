@@ -64,9 +64,7 @@ local CONFIG = {
 	ImportedTreeScaleMin = 39,
 	ImportedTreeScaleMax = 51,
 
-	-- Temporary stylized details until custom rock/grass meshes exist.
-	ShorePebbleStep = 18,
-	ShorePebbleChance = 0.45,
+	-- Temporary stylized details until custom grass/rock meshes exist.
 	GrassTuftCount = 260,
 	GrassTuftMinDistanceFromPlateau = 24,
 }
@@ -556,32 +554,6 @@ local function createTree(position: Vector3): Instance
 	return clone
 end
 
-local function createPebble(position: Vector3): Part
-	local pebble = Instance.new("Part")
-	pebble.Name = "ShorePebble"
-	pebble.Anchored = true
-	pebble.CanCollide = false
-	pebble.Material = Enum.Material.SmoothPlastic
-	pebble.Color = Color3.fromRGB(
-		rng:NextInteger(105, 135),
-		rng:NextInteger(110, 135),
-		rng:NextInteger(108, 128)
-	)
-	pebble.Size = Vector3.new(
-		rng:NextNumber(1.8, 4.2),
-		rng:NextNumber(0.35, 1.0),
-		rng:NextNumber(1.6, 3.8)
-	)
-	pebble.CFrame = CFrame.new(position + Vector3.new(0, pebble.Size.Y / 2, 0))
-		* CFrame.Angles(
-			math.rad(rng:NextNumber(-6, 6)),
-			rng:NextNumber(0, math.pi * 2),
-			math.rad(rng:NextNumber(-6, 6))
-		)
-
-	return pebble
-end
-
 local function createGrassTuft(position: Vector3): Model
 	local tuft = Instance.new("Model")
 	tuft.Name = "GrassTuft"
@@ -604,38 +576,6 @@ local function createGrassTuft(position: Vector3): Model
 	end
 
 	return tuft
-end
-
-local function spawnShorePebbles(detailsFolder: Folder)
-	local half = totalHalfSize()
-
-	for z = -half, half, CONFIG.ShorePebbleStep do
-		if rng:NextNumber() > CONFIG.ShorePebbleChance then
-			continue
-		end
-
-		local riverX = TerrainService.GetRiverXAt(z)
-		local side = if rng:NextNumber() < 0.5 then -1 else 1
-		local distanceFromRiver = CONFIG.RiverHalfWidth + rng:NextNumber(2, CONFIG.RiverBankWidth + 3)
-		local x = riverX + side * distanceFromRiver
-		local y = groundHeightAt(x, z)
-
-		createPebble(Vector3.new(x, y, z)).Parent = detailsFolder
-	end
-
-	for _, point in streamPoints do
-		if rng:NextNumber() > 0.22 then
-			continue
-		end
-
-		local angle = rng:NextNumber(0, math.pi * 2)
-		local offset = Vector2.new(math.cos(angle), math.sin(angle))
-			* rng:NextNumber(CONFIG.StreamHalfWidth + 1, CONFIG.StreamHalfWidth + CONFIG.StreamBankWidth)
-		local x = point.X + offset.X
-		local z = point.Y + offset.Y
-
-		createPebble(Vector3.new(x, groundHeightAt(x, z), z)).Parent = detailsFolder
-	end
 end
 
 local function spawnGrassTufts(detailsFolder: Folder)
@@ -798,7 +738,6 @@ function TerrainService.Init()
 	detailsFolder.Parent = mapFolder
 
 	runOptionalGenerationStep("stylized details", function()
-		spawnShorePebbles(detailsFolder)
 		spawnGrassTufts(detailsFolder)
 	end)
 

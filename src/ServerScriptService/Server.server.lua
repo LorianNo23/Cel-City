@@ -9,6 +9,7 @@ local Services = ServerScriptService:WaitForChild("Services")
 local CelShadingService = require(Services:WaitForChild("CelShadingService"))
 local EconomyService = require(Services:WaitForChild("EconomyService"))
 local PlacementService = require(Services:WaitForChild("PlacementService"))
+local SaveService = require(Services:WaitForChild("SaveService"))
 local TerrainService = require(Services:WaitForChild("TerrainService"))
 
 local function getOrCreateRemoteEvent(folder: Instance, remoteName: string): RemoteEvent
@@ -55,7 +56,9 @@ startService("CelShadingService", function()
 	CelShadingService.Init()
 end)
 TerrainService.Init()
-EconomyService.Init()
+SaveService.Init()
+EconomyService.Init(SaveService)
 PlacementService.Init(placeBuildingRemote, placementResultRemote)
+SaveService.ApplyLoadedDataForExistingPlayers(EconomyService, PlacementService)
 
 print("[Server] Cel-City server started")

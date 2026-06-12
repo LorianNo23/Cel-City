@@ -8,6 +8,7 @@
 local Players = game:GetService("Players")
 
 local EconomyService = {}
+local SaveService
 
 local STARTING_MONEY = 1000
 local balances: { [Player]: number } = {}
@@ -39,11 +40,22 @@ end
 local function setBalance(player: Player, amount: number)
 	balances[player] = amount
 	getOrCreateMoneyValue(player).Value = amount
+
+	if SaveService then
+		SaveService.SetMoney(player, amount)
+	end
 end
 
-function EconomyService.Init()
+function EconomyService.SetBalance(player: Player, amount: number)
+	setBalance(player, amount)
+end
+
+function EconomyService.Init(saveService)
+	SaveService = saveService
+
 	Players.PlayerAdded:Connect(function(player)
-		setBalance(player, STARTING_MONEY)
+		local savedMoney = if SaveService then SaveService.GetPlayerData(player).Money else STARTING_MONEY
+		setBalance(player, savedMoney)
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
@@ -51,7 +63,8 @@ function EconomyService.Init()
 	end)
 
 	for _, player in Players:GetPlayers() do
-		setBalance(player, STARTING_MONEY)
+		local savedMoney = if SaveService then SaveService.GetPlayerData(player).Money else STARTING_MONEY
+		setBalance(player, savedMoney)
 	end
 end
 

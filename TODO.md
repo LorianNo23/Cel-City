@@ -34,12 +34,16 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Naechster Branch: `feature/save-system`
 
-- [ ] Datenmodell fuer platzierte Gebaeude definieren.
-- [ ] Pro Gebaeude speichern: `BuildingId`, Grid-Origin, Rotation.
-- [ ] Geldstand speichern.
-- [ ] Beim Join gespeicherte Gebaeude serverseitig wiederherstellen.
-- [ ] DataStore-Fehler sauber behandeln.
-- [ ] Autosave oder Save-on-leave vorbereiten.
+- [x] Datenmodell fuer platzierte Gebaeude definieren.
+- [x] Pro Gebaeude in Session-Daten erfassen: `BuildingId`, Grid-Origin, Rotation.
+- [x] Geldstand in Session-Daten erfassen.
+- [x] Restore-Pipeline fuer Money und platzierte Gebaeude vorbereiten.
+- [x] DataStore-Laden beim Join vorbereiten.
+- [x] Beim Join gespeicherte Gebaeude aus geladenen Daten serverseitig wiederherstellen.
+- [x] DataStore-Fehler sauber behandeln.
+- [x] Save-on-leave vorbereiten.
+- [ ] `DATASTORE_ENABLED` aktivieren, sobald Studio API Services/Publish-Setup bereit sind.
+- [ ] Autosave waehrend der Session vorbereiten.
 - [ ] Keine komplexe Versionierung bauen, solange das Datenmodell klein ist.
 
 ## Danach: `feature/ui`
@@ -87,7 +91,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 ## Cel-Shading / Visual Polish
 
 - [x] Erste Terrain-Materialpalette definieren.
-- [x] Erste prozedurale Ufer-Kies-Details erzeugen.
+- [x] Schlechte prozedurale Ufer-Pebbles wieder deaktivieren.
 - [x] Erste prozedurale Grasbueschel erzeugen.
 - [x] Terrain-Generation mit Schritt-Logs stabilisieren.
 - [x] `Workspace/GeneratedMap` vor Neugenerierung leeren.
