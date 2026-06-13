@@ -92,8 +92,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Client-Preview soll auch Server-Fehler kurzfristig anzeigen.
 - [ ] Belegte Zellen fuer alle Spieler synchronisieren, nicht nur lokal nach eigener Platzierung.
 - [ ] Beim Platzieren Terrain unter dem Gebaeude automatisch an die Modell-Unterseite anpassen, damit keine Luecken zwischen Boden und Gebaeude entstehen.
-- [ ] Platzierung nahe Pond-Pflanzen blockieren, damit Gebaeude nicht in Rohrkolben/Teichbepflanzung gebaut werden.
-- [ ] Pond-Pflanzen analog zu Wiesen-Baeumen als Placement-Blocker registrieren, statt nur den Pond-Radius zu pruefen.
+- [x] Platzierung nahe Pond-Pflanzen blockieren, damit Gebaeude nicht in Rohrkolben/Teichbepflanzung gebaut werden.
+- [x] Pond-Pflanzen analog zu Wiesen-Baeumen als Placement-Blocker registrieren, statt nur den Pond-Radius zu pruefen.
 - [ ] Grasbueschel und hohe Grass-Flora im Gebaeude-Footprint entfernen oder vermeiden, damit platzierte Modelle nicht von Gras durchschnitten werden.
 - [ ] Bei erfolgreicher Platzierung reservierte Terrain-/Deko-Blocker im Footprint aktualisieren, damit spaetere Systeme keine alten Pflanzen/Details dort nutzen.
 - [x] Echte Gebaeude-Models aus `ServerStorage/BuildingModels` nutzen.

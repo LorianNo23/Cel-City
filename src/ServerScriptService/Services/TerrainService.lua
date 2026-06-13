@@ -129,9 +129,9 @@ local streamPoints: { Vector2 } = {}
 local pondCenter: Vector2? = nil
 local pondBlockRadius = 0
 
--- Meadow-forest trees block building placement. Hill-ring trees are outside
--- the buildable meadow, so only meadow trees are tracked here.
-local meadowTreeBlockers: { { Position: Vector2, Radius: number } } = {}
+-- Meadow-forest trees and pond plants block building placement. Hill-ring
+-- trees are outside the buildable meadow, so only meadow blockers are tracked.
+local natureBlockers: { { Position: Vector2, Radius: number } } = {}
 
 local TERRAIN_COLORS = {
 	[Enum.Material.Grass] = Color3.fromRGB(94, 166, 82),
@@ -239,7 +239,7 @@ function TerrainService.IsTreeArea(x: number, z: number, clearance: number?): bo
 	local position = Vector2.new(x, z)
 	local extraClearance = clearance or 0
 
-	for _, blocker in meadowTreeBlockers do
+	for _, blocker in natureBlockers do
 		if (position - blocker.Position).Magnitude <= blocker.Radius + extraClearance then
 			return true
 		end
@@ -924,6 +924,10 @@ local function spawnPond(terrain: Terrain, mapFolder: Folder)
 
 		paintSoilPatch(terrain, position)
 		createPondPlant(position, scale).Parent = pondFolder
+		table.insert(natureBlockers, {
+			Position = Vector2.new(x, z),
+			Radius = math.max(scale * 0.8, CONFIG.PondSoilPatchRadius),
+		})
 
 		if plantIndex % 25 == 0 then
 			task.wait()
@@ -1182,7 +1186,7 @@ local function spawnMeadowForest(forestsFolder: Folder)
 
 		local tree = createTree(Vector3.new(x, plateauHillHeightAt(x, z), z))
 		tree.Parent = forestsFolder
-		table.insert(meadowTreeBlockers, {
+		table.insert(natureBlockers, {
 			Position = Vector2.new(x, z),
 			Radius = getTreeFootprintRadius(tree) + 2,
 		})
@@ -1240,7 +1244,7 @@ function TerrainService.Init()
 	local terrain = Workspace.Terrain
 
 	logStep(`Generation started with seed {SEED}`)
-	table.clear(meadowTreeBlockers)
+	table.clear(natureBlockers)
 	loadTreeTemplates()
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
