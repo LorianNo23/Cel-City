@@ -79,6 +79,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [x] Rotes Minus-Popup anzeigen, wenn Geld ausgegeben wird.
 - [ ] Einfache Building-Auswahl bauen.
 - [ ] Ausgewaehltes Gebaeude im `PlacementController` wechseln.
+- [ ] Provisorischen Delete-Button bauen, um platzierte Gebaeude wieder zu entfernen.
 - [ ] Platzierungsfehler kurz anzeigen, z.B. `Occupied`, `OutOfBounds`, `NotEnoughMoney`.
 - [ ] UI schlicht halten, keine finale Shop-Oberflaeche.
 
@@ -86,6 +87,8 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 - [ ] Client-Preview soll auch Server-Fehler kurzfristig anzeigen.
 - [ ] Belegte Zellen fuer alle Spieler synchronisieren, nicht nur lokal nach eigener Platzierung.
+- [ ] Beim Platzieren Terrain unter dem Gebaeude automatisch an die Modell-Unterseite anpassen, damit keine Luecken zwischen Boden und Gebaeude entstehen.
+- [ ] Platzierung nahe Pond-Pflanzen blockieren, damit Gebaeude nicht in Rohrkolben/Teichbepflanzung gebaut werden.
 - [x] Echte Gebaeude-Models aus `ServerStorage/BuildingModels` nutzen.
 - [x] Shop-Footprint an quadratischen Modellboden anpassen, damit Preview und 3D-Modell sauber alignen.
 - [ ] Placeholder-Farbe/Material spaeter entfernen.
