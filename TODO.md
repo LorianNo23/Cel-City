@@ -56,6 +56,9 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 - [x] Flussverlauf natuerlicher machen: maximal ca. 5 Meter gerade Strecke, danach wieder eine Kurvung einbauen.
 - [ ] Hoehlen hinzufuegen, die direkt am Fuss einer Erhebung starten.
+- [ ] Hoehlen-Eingaenge mit Abstand zu Fluss, Baechen, Pond und Wiesen-Wald platzieren.
+- [ ] River-/Stream-Pfade als Debug-Overlay optional sichtbar machen, damit Seeds schneller bewertet werden koennen.
+- [ ] Pond-Position, River-Pfad und Stream-Starts im Output kompakt loggen, damit schlechte Seeds reproduzierbar sind.
 - [x] Gebaeudeplatzierung auf den Plateau-Erhebungen pruefen (Steigung), damit nichts schief oder schwebend steht.
 
 ## Naechster Branch: `feature/save-system`
@@ -70,6 +73,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [x] Save-on-leave vorbereiten.
 - [ ] `DATASTORE_ENABLED` aktivieren, sobald Studio API Services/Publish-Setup bereit sind.
 - [ ] Terrain-Seed mit den Spielstandsdaten speichern und beim Restore wiederverwenden, damit gespeicherte Gebaeude nicht im neu generierten Fluss landen.
+- [ ] TerrainService.Seed als kleine API bereitstellen, damit SaveService den aktiven Seed speichern kann.
 - [ ] Autosave waehrend der Session vorbereiten.
 - [ ] Keine komplexe Versionierung bauen, solange das Datenmodell klein ist.
 
@@ -89,6 +93,9 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Belegte Zellen fuer alle Spieler synchronisieren, nicht nur lokal nach eigener Platzierung.
 - [ ] Beim Platzieren Terrain unter dem Gebaeude automatisch an die Modell-Unterseite anpassen, damit keine Luecken zwischen Boden und Gebaeude entstehen.
 - [ ] Platzierung nahe Pond-Pflanzen blockieren, damit Gebaeude nicht in Rohrkolben/Teichbepflanzung gebaut werden.
+- [ ] Pond-Pflanzen analog zu Wiesen-Baeumen als Placement-Blocker registrieren, statt nur den Pond-Radius zu pruefen.
+- [ ] Grasbueschel und hohe Grass-Flora im Gebaeude-Footprint entfernen oder vermeiden, damit platzierte Modelle nicht von Gras durchschnitten werden.
+- [ ] Bei erfolgreicher Platzierung reservierte Terrain-/Deko-Blocker im Footprint aktualisieren, damit spaetere Systeme keine alten Pflanzen/Details dort nutzen.
 - [x] Echte Gebaeude-Models aus `ServerStorage/BuildingModels` nutzen.
 - [x] Shop-Footprint an quadratischen Modellboden anpassen, damit Preview und 3D-Modell sauber alignen.
 - [ ] Placeholder-Farbe/Material spaeter entfernen.
