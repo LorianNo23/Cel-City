@@ -54,7 +54,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Terrain erweitern
 
-- [ ] Flussverlauf natuerlicher machen: maximal ca. 5 Meter gerade Strecke, danach wieder eine Kurvung einbauen.
+- [x] Flussverlauf natuerlicher machen: maximal ca. 5 Meter gerade Strecke, danach wieder eine Kurvung einbauen.
 - [ ] Hoehlen hinzufuegen, die direkt am Fuss einer Erhebung starten.
 - [ ] Gebaeudeplatzierung auf den Plateau-Erhebungen pruefen (Steigung), damit nichts schief oder schwebend steht.
 

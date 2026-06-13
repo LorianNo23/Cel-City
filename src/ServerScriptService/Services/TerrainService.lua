@@ -53,6 +53,8 @@ local CONFIG = {
 	RiverMeander = 140, -- Maximum sideways offset of the river path.
 	RiverNoiseScale = 1 / 220,
 	RiverSampleStep = 4,
+	RiverMaxStraightLength = 18, -- About 5 meters; add a bend before the path reads as straight.
+	RiverShortBendAmplitude = 10,
 
 	-- One gently rolling grass rise per meadow "compartment". The waterways
 	-- split the plateau into separate compartments; the hill height grows
@@ -341,10 +343,23 @@ end
 
 local function generateRiverPath()
 	local half = totalHalfSize()
+	local seedPhase = SEED * 0.017
 
 	for z = -half, half, CONFIG.RiverSampleStep do
 		local noiseValue = math.noise(z * CONFIG.RiverNoiseScale, 1000, SEED)
-		riverPathX[math.floor(z / CONFIG.RiverSampleStep)] = noiseValue * 2 * CONFIG.RiverMeander
+		local broadMeander = noiseValue * 2 * CONFIG.RiverMeander
+
+		-- The broad noise can occasionally look almost straight over longer
+		-- sections. A small seeded bend with an about-5m wavelength keeps the
+		-- silhouette moving without overpowering the main river shape.
+		local shortBend = math.sin((z / CONFIG.RiverMaxStraightLength) * math.pi + seedPhase)
+			* CONFIG.RiverShortBendAmplitude
+
+		riverPathX[math.floor(z / CONFIG.RiverSampleStep)] = math.clamp(
+			broadMeander + shortBend,
+			-CONFIG.RiverMeander,
+			CONFIG.RiverMeander
+		)
 	end
 end
 
