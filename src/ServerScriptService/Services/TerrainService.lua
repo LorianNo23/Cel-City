@@ -1041,6 +1041,21 @@ local function createTree(position: Vector3): Instance
 	return clone
 end
 
+local function getTerrainSurfaceYAt(x: number, z: number, fallbackY: number): number
+	local rayOrigin = Vector3.new(x, 1000, z)
+	local rayDirection = Vector3.new(0, -2000, 0)
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Include
+	raycastParams.FilterDescendantsInstances = { Workspace.Terrain }
+
+	local result = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+	if result then
+		return result.Position.Y
+	end
+
+	return fallbackY
+end
+
 local function getTreeFootprintRadius(tree: Instance): number
 	if tree:IsA("Model") then
 		local _, boundsSize = tree:GetBoundingBox()
@@ -1147,7 +1162,8 @@ local function spawnForests(forestsFolder: Folder)
 				continue
 			end
 
-			local tree = createTree(Vector3.new(x, groundHeightAt(x, z), z))
+			local y = getTerrainSurfaceYAt(x, z, groundHeightAt(x, z))
+			local tree = createTree(Vector3.new(x, y, z))
 			tree.Parent = forestsFolder
 		end
 
@@ -1184,7 +1200,8 @@ local function spawnMeadowForest(forestsFolder: Folder)
 			continue
 		end
 
-		local tree = createTree(Vector3.new(x, plateauHillHeightAt(x, z), z))
+		local y = getTerrainSurfaceYAt(x, z, plateauHillHeightAt(x, z))
+		local tree = createTree(Vector3.new(x, y, z))
 		tree.Parent = forestsFolder
 		table.insert(natureBlockers, {
 			Position = Vector2.new(x, z),
