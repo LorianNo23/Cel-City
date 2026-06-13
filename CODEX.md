@@ -62,7 +62,7 @@ Current controllers: `EconomyController`, `PlacementController`, `SprintControll
 ### Placement flow (the core loop)
 
 1. `PlacementController` (client) shows a grid-snapped ghost preview and fires `PlaceBuilding` with only `buildingId`, position, and rotation.
-2. `PlacementService` (server) re-snaps and validates in order, replying via `PlacementResult` with `{ Success, Reason, Cells }`. Reason strings: `InvalidBuildingId`, `InvalidPosition`, `InvalidRotation` (only 0/90/180/270), `UnknownBuilding`, `TooFar` (player must be within 80 studs), `OutOfBounds`, `Water` (analytic river/stream check **plus** terrain raycast for Water/Slate materials, since gravel banks extend past the analytic radius), `Occupied`, `NotEnoughMoney`, `Placed`.
+2. `PlacementService` (server) re-snaps and validates in order, replying via `PlacementResult` with `{ Success, Reason, Cells }`. Reason strings: `InvalidBuildingId`, `InvalidPosition`, `InvalidRotation` (only 0/90/180/270), `UnknownBuilding`, `TooFar` (player must be within 80 studs), `OutOfBounds`, `Water` (analytic river/stream check **plus** terrain raycast for Water/Slate materials, since gravel banks extend past the analytic radius), `Tree` (meadow-forest tree blocker), `Occupied`, `NotEnoughMoney`, `Placed`.
 3. On success the server clones the model from `ServerStorage.BuildingModels[ModelName]` (green placeholder Part if missing), parents it to `Workspace/PlacedBuildings`, marks the cells occupied, and only then deducts money.
 
 Occupied cells are stored server-side as a `{ [cellKey]: boolean }` map keyed by `Grid.cellKey` (`"x:y"`). They are session-only and currently not synced to other players' previews (known TODO). `PlacementService` has a `DEBUG_GRID` flag that renders grid lines when enabled.
@@ -84,7 +84,7 @@ Generates the map on every server start into `Workspace/GeneratedMap` (cleared b
 
 - Flat buildable plateau (half-size 256 studs) with its top at Y = 0, matching `Grid.gridToWorld`.
 - Hill/mountain ring around it (fractal `math.noise`, fixed `SEED = 1337` so hills/river/streams are reproducible), with height-based materials (grass → dirt → rock).
-- A meandering north-south river plus small streams flowing into it; both carve water with Slate gravel banks. Exposes `IsWaterArea(x, z)`, `GetGroundHeight`, `GetRiverXAt` for other systems (PlacementService uses `IsWaterArea`).
+- A meandering north-south river plus small streams flowing into it; both carve water with Slate gravel banks. Exposes `IsWaterArea(x, z)`, `IsTreeArea(x, z, clearance)`, `GetGroundHeight`, `GetRiverXAt` for other systems (PlacementService uses water/tree area checks).
 - Randomized forests (count/size/density random per start, intentionally not seeded) cloning tree models from `ServerStorage.TreeModels` with a placeholder fallback; shore pebbles and grass tufts as temporary stylized details.
 - Custom terrain material colors (stylized palette set via `SetMaterialColor`).
 

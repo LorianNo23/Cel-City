@@ -161,6 +161,18 @@ local function areCellsOnDryLand(cells: { Vector2 }): boolean
 	return true
 end
 
+local function areCellsClearOfTrees(cells: { Vector2 }): boolean
+	for _, cell in cells do
+		local world = Grid.gridToWorld(cell)
+
+		if TerrainService.IsTreeArea(world.X, world.Z, Grid.TileSize / 2) then
+			return false
+		end
+	end
+
+	return true
+end
+
 local function createDebugGrid()
 	if not DEBUG_GRID then
 		return
@@ -370,6 +382,12 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 		return
 	end
 
+	if not areCellsClearOfTrees(occupiedByBuilding) then
+		warn("[PlacementService] Building overlaps a meadow tree:", buildingId)
+		sendPlacementResult(player, false, "Tree", occupiedByBuilding)
+		return
+	end
+
 	-- TODO: Collision - add checks for roads, steep slopes, and reserved map areas.
 	if not areCellsFree(occupiedByBuilding) then
 		warn("[PlacementService] Grid cells are already occupied for", buildingId)
@@ -419,6 +437,11 @@ function PlacementService.RestoreBuilding(buildingId: string, origin: Vector2, r
 
 	if not areCellsOnDryLand(occupiedByBuilding) then
 		warn("[PlacementService] Cannot restore building on water:", buildingId)
+		return false
+	end
+
+	if not areCellsClearOfTrees(occupiedByBuilding) then
+		warn("[PlacementService] Cannot restore building on a meadow tree:", buildingId)
 		return false
 	end
 

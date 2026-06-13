@@ -49,7 +49,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [x] Maximale Ausbreitung der Teichpflanzen auf ~3 m (10.7 Studs) ueber das Ufer begrenzen.
 - [x] Eine kleinere Abteilung komplett mit lockerem Wald bedecken.
 - [x] Wiesen-Wald auf ~1/3 der Baeume ausduennen (`MeadowForestTreeChance` 0.45 -> 0.15).
-- [ ] Gebaeudeplatzierung mit Baeumen auf der Wiese abstimmen (Haeuser koennen aktuell in Wiesen-Wald-Baeume hineingebaut werden).
+- [x] Gebaeudeplatzierung mit Baeumen auf der Wiese abstimmen (Haeuser koennen aktuell in Wiesen-Wald-Baeume hineingebaut werden).
 - [x] Harte Regel im Code: Gewaesser darf die Erhebung nie beruehren (jede Terrain-Saeule wird gegen `IsWaterArea` geprueft).
 
 ## Terrain erweitern

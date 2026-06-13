@@ -129,6 +129,10 @@ local streamPoints: { Vector2 } = {}
 local pondCenter: Vector2? = nil
 local pondBlockRadius = 0
 
+-- Meadow-forest trees block building placement. Hill-ring trees are outside
+-- the buildable meadow, so only meadow trees are tracked here.
+local meadowTreeBlockers: { { Position: Vector2, Radius: number } } = {}
+
 local TERRAIN_COLORS = {
 	[Enum.Material.Grass] = Color3.fromRGB(94, 166, 82),
 	[Enum.Material.LeafyGrass] = Color3.fromRGB(64, 142, 75),
@@ -222,6 +226,19 @@ function TerrainService.IsWaterArea(x: number, z: number): boolean
 	-- stay out of them just like they stay off the river banks.
 	if pondCenter and (position - pondCenter).Magnitude <= pondBlockRadius then
 		return true
+	end
+
+	return false
+end
+
+function TerrainService.IsTreeArea(x: number, z: number, clearance: number?): boolean
+	local position = Vector2.new(x, z)
+	local extraClearance = clearance or 0
+
+	for _, blocker in meadowTreeBlockers do
+		if (position - blocker.Position).Magnitude <= blocker.Radius + extraClearance then
+			return true
+		end
 	end
 
 	return false
@@ -1016,6 +1033,17 @@ local function createTree(position: Vector3): Instance
 	return clone
 end
 
+local function getTreeFootprintRadius(tree: Instance): number
+	if tree:IsA("Model") then
+		local _, boundsSize = tree:GetBoundingBox()
+		return math.max(boundsSize.X, boundsSize.Z) / 2
+	elseif tree:IsA("BasePart") then
+		return math.max(tree.Size.X, tree.Size.Z) / 2
+	end
+
+	return 0
+end
+
 local function createGrassTuft(position: Vector3): Model
 	local tuft = Instance.new("Model")
 	tuft.Name = "GrassTuft"
@@ -1150,6 +1178,10 @@ local function spawnMeadowForest(forestsFolder: Folder)
 
 		local tree = createTree(Vector3.new(x, plateauHillHeightAt(x, z), z))
 		tree.Parent = forestsFolder
+		table.insert(meadowTreeBlockers, {
+			Position = Vector2.new(x, z),
+			Radius = getTreeFootprintRadius(tree) + 2,
+		})
 		treesPlaced += 1
 
 		if treesPlaced % 10 == 0 then
@@ -1204,6 +1236,7 @@ function TerrainService.Init()
 	local terrain = Workspace.Terrain
 
 	logStep(`Generation started with seed {SEED}`)
+	table.clear(meadowTreeBlockers)
 	loadTreeTemplates()
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
