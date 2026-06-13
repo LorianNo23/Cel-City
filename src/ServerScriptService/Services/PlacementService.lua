@@ -328,12 +328,59 @@ local function createBuildingInstance(buildingId: string, buildingConfig, center
 	return createPlaceholderBuilding(buildingId, buildingConfig, centerWorld, rotation)
 end
 
+local function isWorldPositionInsideCells(position: Vector3, cells: { Vector2 }): boolean
+	local halfTile = Grid.TileSize / 2
+
+	for _, cell in cells do
+		local cellCenter = Grid.gridToWorld(cell)
+
+		if
+			math.abs(position.X - cellCenter.X) <= halfTile
+			and math.abs(position.Z - cellCenter.Z) <= halfTile
+		then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function getInstanceWorldPosition(instance: Instance): Vector3?
+	if instance:IsA("Model") then
+		return instance:GetPivot().Position
+	elseif instance:IsA("BasePart") then
+		return instance.Position
+	end
+
+	return nil
+end
+
+local function clearGrassTuftsInCells(cells: { Vector2 })
+	local generatedMap = Workspace:FindFirstChild("GeneratedMap")
+	local detailsFolder = generatedMap and generatedMap:FindFirstChild("StylizedDetails")
+	if not detailsFolder then
+		return
+	end
+
+	for _, child in detailsFolder:GetChildren() do
+		if child.Name ~= "GrassTuft" then
+			continue
+		end
+
+		local position = getInstanceWorldPosition(child)
+		if position and isWorldPositionInsideCells(position, cells) then
+			child:Destroy()
+		end
+	end
+end
+
 local function placeValidatedBuilding(buildingId: string, buildingConfig, origin: Vector2, rotation: number)
 	local occupiedByBuilding = Grid.getOccupiedCells(origin, buildingConfig.Size, rotation)
 	local flatCenterWorld = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, 0)
 	local groundY = getGroundYAtPosition(flatCenterWorld)
 	local centerWorld = Vector3.new(flatCenterWorld.X, groundY, flatCenterWorld.Z)
 	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, rotation)
+	clearGrassTuftsInCells(occupiedByBuilding)
 	buildingInstance.Parent = placedBuildingsFolder
 	markCellsOccupied(occupiedByBuilding)
 
