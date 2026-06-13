@@ -23,6 +23,7 @@ local placementResultRemote: RemoteEvent
 
 local DEBUG_GRID = false
 local MAX_PLACE_DISTANCE = 80
+local MAX_GROUND_HEIGHT_DELTA = 1.5
 local VALID_ROTATIONS = {
 	[0] = true,
 	[90] = true,
@@ -171,6 +172,21 @@ local function areCellsClearOfTrees(cells: { Vector2 }): boolean
 	end
 
 	return true
+end
+
+local function areCellsOnGentleGround(cells: { Vector2 }): boolean
+	local minY = math.huge
+	local maxY = -math.huge
+
+	for _, cell in cells do
+		local world = Grid.gridToWorld(cell)
+		local groundY = getGroundYAtPosition(world)
+
+		minY = math.min(minY, groundY)
+		maxY = math.max(maxY, groundY)
+	end
+
+	return maxY - minY <= MAX_GROUND_HEIGHT_DELTA
 end
 
 local function createDebugGrid()
@@ -388,7 +404,13 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 		return
 	end
 
-	-- TODO: Collision - add checks for roads, steep slopes, and reserved map areas.
+	if not areCellsOnGentleGround(occupiedByBuilding) then
+		warn("[PlacementService] Building footprint is too uneven:", buildingId)
+		sendPlacementResult(player, false, "Slope", occupiedByBuilding)
+		return
+	end
+
+	-- TODO: Collision - add checks for roads and reserved map areas.
 	if not areCellsFree(occupiedByBuilding) then
 		warn("[PlacementService] Grid cells are already occupied for", buildingId)
 		sendPlacementResult(player, false, "Occupied", occupiedByBuilding)
@@ -442,6 +464,11 @@ function PlacementService.RestoreBuilding(buildingId: string, origin: Vector2, r
 
 	if not areCellsClearOfTrees(occupiedByBuilding) then
 		warn("[PlacementService] Cannot restore building on a meadow tree:", buildingId)
+		return false
+	end
+
+	if not areCellsOnGentleGround(occupiedByBuilding) then
+		warn("[PlacementService] Cannot restore building on uneven ground:", buildingId)
 		return false
 	end
 
