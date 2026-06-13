@@ -84,7 +84,7 @@ Generates the map on every server start into `Workspace/GeneratedMap` (cleared b
 
 - Flat buildable plateau (half-size 256 studs) with its top at Y = 0, matching `Grid.gridToWorld`.
 - Hill/mountain ring around it (fractal `math.noise`, fixed `SEED = 1337` so hills/river/streams are reproducible), with height-based materials (grass → dirt → rock).
-- A meandering north-south river plus small streams flowing into it; both carve water with Slate gravel banks. Exposes `IsWaterArea(x, z)`, `IsTreeArea(x, z, clearance)`, `GetGroundHeight`, `GetRiverXAt` for other systems (PlacementService uses water/tree area checks).
+- A meandering north-south river plus small streams flowing into it; both carve water with Slate gravel banks. Exposes `GetSeed()`, `IsWaterArea(x, z)`, `IsTreeArea(x, z, clearance)`, `GetGroundHeight`, `GetRiverXAt` for other systems (PlacementService uses water/tree area checks; SaveService can later persist the seed).
 - Randomized forests (count/size/density random per start, intentionally not seeded) cloning tree models from `ServerStorage.TreeModels` with a placeholder fallback; shore pebbles and grass tufts as temporary stylized details.
 - Custom terrain material colors (stylized palette set via `SetMaterialColor`).
 

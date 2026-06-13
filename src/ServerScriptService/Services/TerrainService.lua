@@ -196,6 +196,10 @@ local function groundHeightAt(x: number, z: number): number
 	return fractalNoise(x, z) * CONFIG.MaxHillHeight * hillRamp(x, z)
 end
 
+function TerrainService.GetSeed(): number
+	return SEED
+end
+
 function TerrainService.GetGroundHeight(x: number, z: number): number
 	return groundHeightAt(x, z)
 end

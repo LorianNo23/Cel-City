@@ -73,7 +73,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [x] Save-on-leave vorbereiten.
 - [ ] `DATASTORE_ENABLED` aktivieren, sobald Studio API Services/Publish-Setup bereit sind.
 - [ ] Terrain-Seed mit den Spielstandsdaten speichern und beim Restore wiederverwenden, damit gespeicherte Gebaeude nicht im neu generierten Fluss landen.
-- [ ] TerrainService.Seed als kleine API bereitstellen, damit SaveService den aktiven Seed speichern kann.
+- [x] TerrainService.Seed als kleine API bereitstellen, damit SaveService den aktiven Seed speichern kann.
 - [ ] Autosave waehrend der Session vorbereiten.
 - [ ] Keine komplexe Versionierung bauen, solange das Datenmodell klein ist.
 
