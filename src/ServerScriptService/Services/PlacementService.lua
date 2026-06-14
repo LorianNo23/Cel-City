@@ -24,6 +24,8 @@ local placementResultRemote: RemoteEvent
 local DEBUG_GRID = false
 local MAX_PLACE_DISTANCE = 80
 local MAX_GROUND_HEIGHT_DELTA = 1.5
+local PLATFORM_DEPTH = 8
+local PLATFORM_PADDING = 0.25
 local VALID_ROTATIONS = {
 	[0] = true,
 	[90] = true,
@@ -187,6 +189,21 @@ local function areCellsOnGentleGround(cells: { Vector2 }): boolean
 	end
 
 	return maxY - minY <= MAX_GROUND_HEIGHT_DELTA
+end
+
+local function getPlatformYForCells(cells: { Vector2 }): number
+	local platformY = -math.huge
+
+	for _, cell in cells do
+		local world = Grid.gridToWorld(cell)
+		platformY = math.max(platformY, getGroundYAtPosition(world))
+	end
+
+	if platformY == -math.huge then
+		return 0
+	end
+
+	return platformY
 end
 
 local function createDebugGrid()
@@ -374,11 +391,32 @@ local function clearGrassTuftsInCells(cells: { Vector2 })
 	end
 end
 
+local function flattenTerrainForBuilding(origin: Vector2, size: Vector2, rotation: number, platformY: number)
+	local terrain = Workspace.Terrain
+	local footprintSize = Grid.getFootprintSize(size, rotation)
+	local center = getBuildingCenterWorld(origin, size, rotation, platformY)
+	local width = footprintSize.X * Grid.TileSize + PLATFORM_PADDING * 2
+	local depth = footprintSize.Y * Grid.TileSize + PLATFORM_PADDING * 2
+
+	terrain:FillBlock(
+		CFrame.new(center.X, platformY + PLATFORM_DEPTH / 2, center.Z),
+		Vector3.new(width, PLATFORM_DEPTH, depth),
+		Enum.Material.Air
+	)
+
+	terrain:FillBlock(
+		CFrame.new(center.X, platformY - PLATFORM_DEPTH / 2, center.Z),
+		Vector3.new(width, PLATFORM_DEPTH, depth),
+		Enum.Material.Grass
+	)
+end
+
 local function placeValidatedBuilding(buildingId: string, buildingConfig, origin: Vector2, rotation: number)
 	local occupiedByBuilding = Grid.getOccupiedCells(origin, buildingConfig.Size, rotation)
-	local flatCenterWorld = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, 0)
-	local groundY = getGroundYAtPosition(flatCenterWorld)
-	local centerWorld = Vector3.new(flatCenterWorld.X, groundY, flatCenterWorld.Z)
+	local platformY = getPlatformYForCells(occupiedByBuilding)
+	flattenTerrainForBuilding(origin, buildingConfig.Size, rotation, platformY)
+
+	local centerWorld = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, platformY)
 	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, rotation)
 	clearGrassTuftsInCells(occupiedByBuilding)
 	buildingInstance.Parent = placedBuildingsFolder

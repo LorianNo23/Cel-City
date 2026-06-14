@@ -145,11 +145,12 @@ Server flow:
 3. Reject water, gravel banks, pond/shore, meadow tree blockers, pond plant blockers, and too-uneven ground.
 4. Reject occupied cells.
 5. Check money.
-6. Clone the server model or placeholder.
-7. Remove blocking grass tufts from the footprint.
-8. Parent the building under `Workspace.PlacedBuildings`.
-9. Mark cells occupied.
-10. Spend money and update session save data.
+6. Flatten the building footprint into a small grass platform.
+7. Clone the server model or placeholder onto that platform.
+8. Remove blocking grass tufts from the footprint.
+9. Parent the building under `Workspace.PlacedBuildings`.
+10. Mark cells occupied.
+11. Spend money and update session save data.
 
 `PlacementResult.Reason` values currently include:
 
@@ -169,7 +170,7 @@ Server flow:
 Important limitation:
 
 - Occupied cells are session-only and not yet synced to other players' previews.
-- Terrain flattening under buildings is not implemented yet. See the special TODO about unified build height and platform shaping.
+- Terrain flattening under buildings exists as a first server-side placement pass. The broader unified-build-height/save-restore behavior is still tracked in TODO/PRIORITY.
 
 ## Terrain System
 
