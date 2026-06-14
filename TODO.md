@@ -58,6 +58,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Hoehlen hinzufuegen, die direkt am Fuss einer Erhebung starten.
 - [ ] Hoehlen-Eingaenge mit Abstand zu Fluss, Baechen, Pond und Wiesen-Wald platzieren.
 - [ ] Hoehlen sauber ausschneiden: keine schwebenden/rausragenden Steinspitzen oder Terrain-Reste an Waenden und Eingaengen.
+- [ ] Stein-/Slate-Ufer und Hoehlen-Terrain natuerlicher formen: keine unnatuerlichen Steinspitzen, schwebenden Platten oder zufaelligen Fels-Bruecken ueber Wasser/Abgruende.
 - [ ] River-/Stream-Pfade als Debug-Overlay optional sichtbar machen, damit Seeds schneller bewertet werden koennen.
 - [ ] Pond-Position, River-Pfad und Stream-Starts im Output kompakt loggen, damit schlechte Seeds reproduzierbar sind.
 - [x] Baumplatzierung an Terrainhoehe anpassen, damit Baumstaemme immer sauber auf dem Boden sitzen und nicht schweben.
