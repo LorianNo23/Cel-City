@@ -59,9 +59,11 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Hoehlen-Eingaenge mit Abstand zu Fluss, Baechen, Pond und Wiesen-Wald platzieren.
 - [ ] Hoehlen sauber ausschneiden: keine schwebenden/rausragenden Steinspitzen oder Terrain-Reste an Waenden und Eingaengen.
 - [ ] Stein-/Slate-Ufer und Hoehlen-Terrain natuerlicher formen: keine unnatuerlichen Steinspitzen, schwebenden Platten oder zufaelligen Fels-Bruecken ueber Wasser/Abgruende.
+- [ ] Fels-/Slate-Waende nach Wasser-/Hoehlen-Carving glaetten: keine rechteckigen FillBlock-Kanten, herausragenden Steinplatten oder geschlossenen Fels-Bruecken.
 - [ ] River-/Stream-Pfade als Debug-Overlay optional sichtbar machen, damit Seeds schneller bewertet werden koennen.
 - [x] Pond-Position, River-Pfad und Stream-Starts im Output kompakt loggen, damit schlechte Seeds reproduzierbar sind.
 - [x] Baumplatzierung an Terrainhoehe anpassen, damit Baumstaemme immer sauber auf dem Boden sitzen und nicht schweben.
+- [ ] Baumplatzierung mit Terrain-Material pruefen: keine Baeume auf Wasser, Slate-/Felswaenden, Ufer-Kanten oder frisch gecarvten Hoehlen-/Flussflaechen.
 - [x] Waelder realistischer verteilen: dichter und groessere Baeume im Zentrum, nach aussen kleinere Baeume und groessere Abstaende.
 - [ ] Pond-Pflanzen realistischer verteilen: dichter/groesser nahe am Wasser, nach aussen kleiner und lockerer.
 - [x] Gebaeudeplatzierung auf den Plateau-Erhebungen pruefen (Steigung), damit nichts schief oder schwebend steht.
@@ -98,6 +100,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Belegte Zellen fuer alle Spieler synchronisieren, nicht nur lokal nach eigener Platzierung.
 - [x] Beim Platzieren Terrain unter dem Gebaeude automatisch an die Modell-Unterseite anpassen, damit keine Luecken zwischen Boden und Gebaeude entstehen.
 - [ ] Spezial-TODO: Gebaeude sollen beim Platzieren eine einheitliche Bauhoehe bekommen; Terrain im Footprint serverseitig auf eine flache Plattform an Modell-Unterseite anpassen, damit alle platzierten Gebaeude auf demselben Level stehen und weder hoeher noch tiefer einsinken.
+- [ ] Terrain-Plattform fuer Gebaeude kleiner und weicher machen: keine sichtbaren grossen Huegel oder Plateaus um kleine Gebaeude, nur Modell-Unterseite sauber stuetzen und Kanten natuerlich auslaufen lassen.
 - [x] Platzierung nahe Pond-Pflanzen blockieren, damit Gebaeude nicht in Rohrkolben/Teichbepflanzung gebaut werden.
 - [x] Pond-Pflanzen analog zu Wiesen-Baeumen als Placement-Blocker registrieren, statt nur den Pond-Radius zu pruefen.
 - [x] Grasbueschel und hohe Grass-Flora im Gebaeude-Footprint entfernen oder vermeiden, damit platzierte Modelle nicht von Gras durchschnitten werden.

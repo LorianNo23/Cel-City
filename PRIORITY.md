@@ -27,12 +27,15 @@ Problem:
 - Gebaeude koennen sichtbar ueber oder unter dem Terrain sitzen.
 - Gras und Terrain koennen die Modell-Unterseite schneiden.
 - Mehrere Gebaeude koennen optisch auf unterschiedlichen Hoehen stehen.
+- Die erste Terrain-Plattform-Version kann zu grosse sichtbare Huegel/Plateaus um kleine Gebaeude erzeugen.
 
 Naechste Schritte:
 
 - Einheitliche Bauhoehe pro Placement-Footprint definieren. `[x] erste Version`
 - Terrain im Footprint serverseitig zu einer flachen Plattform formen. `[x] erste Version`
 - Gebaeude exakt auf die Modell-Unterseite bzw. Plattform setzen. `[x] erste Version`
+- Plattform-Footprint und Tiefe reduzieren bzw. an die sichtbare Modell-Unterseite koppeln.
+- Plattform-Kanten weich auslaufen lassen, damit keine kuenstlichen Huegel entstehen.
 - Save/Restore beruecksichtigen, damit Plattformen nach Laden reproduzierbar sind.
 
 Erfolgskriterium:
@@ -45,12 +48,14 @@ Problem:
 
 - Slate-/Steinbereiche koennen unnatuerliche Spitzen, schwebende Platten oder Bruecken ueber Wasser bilden.
 - Hoehlen duerfen spaeter keine rausragenden Terrain-Reste an Waenden/Eingaengen erzeugen.
+- Screenshots zeigen weiterhin herausragende Felsplatten, harte rechteckige Waende und unnatuerliche Bruecken ueber Wasser.
 
 Naechste Schritte:
 
 - Wasser-/Ufer-Carving pruefen und ueberlappende FillBlock-Paesse sauberer trennen. `[x] erste Version`
 - Slate-Bank-Formen glatter und kontrollierter machen. `[x] erste Version`
 - Debug-Seed-Logging verbessern, damit schlechte Seeds reproduzierbar sind. `[x] erste Version`
+- Fels-/Slate-Waende nach dem Carving glaetten und Ueberhaenge/Bruecken gezielt entfernen.
 
 Erfolgskriterium:
 
@@ -62,11 +67,13 @@ Problem:
 
 - Waelder und Pond-Pflanzen koennen zu gleichmaessig oder gespammt wirken.
 - Vegetation muss mit Placement-Blockern synchron bleiben.
+- Baeume koennen trotz Surface-Raycasts noch auf Wasser, Slate/Fels oder Ufer-/Carving-Kanten landen.
 
 Naechste Schritte:
 
 - Pond-Pflanzen wie Waelder verteilen: dicht/gross nahe Wasser, kleiner/lockerer nach aussen.
 - Wiesen- und Hill-Forests in Studio visuell pruefen.
+- Baumplatzierung zusaetzlich nach Terrain-Material und Clearance pruefen.
 - Baum- und Pflanzen-Blocker nach jeder Verteilungslogik aktuell halten.
 
 Erfolgskriterium:
