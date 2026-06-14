@@ -50,7 +50,7 @@ Naechste Schritte:
 
 - Wasser-/Ufer-Carving pruefen und ueberlappende FillBlock-Paesse sauberer trennen. `[x] erste Version`
 - Slate-Bank-Formen glatter und kontrollierter machen. `[x] erste Version`
-- Debug-Seed-Logging verbessern, damit schlechte Seeds reproduzierbar sind.
+- Debug-Seed-Logging verbessern, damit schlechte Seeds reproduzierbar sind. `[x] erste Version`
 
 Erfolgskriterium:
 
@@ -118,3 +118,4 @@ Erfolgskriterium:
 - Baeume werden auf echte Terrain-Oberflaeche gesetzt.
 - Hill-Forests haben dichtere Zentren und kleinere/lockerere Raender.
 - Slate-Ufer werden als flache Oberflaechenschicht statt als tiefe massive Bloecke erzeugt.
+- River-X-Range, Stream-Starts und Pond-Position werden fuer Seed-Debugging geloggt.

@@ -377,6 +377,8 @@ end
 local function generateRiverPath()
 	local half = totalHalfSize()
 	local seedPhase = SEED * 0.017
+	local minRiverX = math.huge
+	local maxRiverX = -math.huge
 
 	for z = -half, half, CONFIG.RiverSampleStep do
 		local noiseValue = math.noise(z * CONFIG.RiverNoiseScale, 1000, SEED)
@@ -388,12 +390,17 @@ local function generateRiverPath()
 		local shortBend = math.sin((z / CONFIG.RiverMaxStraightLength) * math.pi + seedPhase)
 			* CONFIG.RiverShortBendAmplitude
 
-		riverPathX[math.floor(z / CONFIG.RiverSampleStep)] = math.clamp(
+		local riverX = math.clamp(
 			broadMeander + shortBend,
 			-CONFIG.RiverMeander,
 			CONFIG.RiverMeander
 		)
+		riverPathX[math.floor(z / CONFIG.RiverSampleStep)] = riverX
+		minRiverX = math.min(minRiverX, riverX)
+		maxRiverX = math.max(maxRiverX, riverX)
 	end
+
+	logStep(`River path x-range {math.floor(minRiverX)}..{math.floor(maxRiverX)} over z {-half}..{half}`)
 end
 
 local function computeStreamPath(startX: number, startZ: number): { Vector2 }
@@ -433,6 +440,15 @@ local function computeStreamPaths(): { { Vector2 } }
 
 		local path = computeStreamPath(side * startDistance, startZ)
 		table.insert(paths, path)
+
+		local endPoint = path[#path]
+		if endPoint then
+			logStep(
+				`Stream {index} starts {math.floor(side * startDistance)}, {math.floor(startZ)} and reaches {math.floor(endPoint.X)}, {math.floor(endPoint.Y)} with {#path} samples`
+			)
+		else
+			logStep(`Stream {index} produced no path samples`)
+		end
 
 		for _, point in path do
 			table.insert(streamPoints, point)
