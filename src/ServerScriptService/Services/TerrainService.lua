@@ -108,6 +108,7 @@ local CONFIG = {
 	ForestRadiusMax = 140,
 	ImportedTreeScaleMin = 39,
 	ImportedTreeScaleMax = 51,
+	ForestEdgeTreeScaleMultiplier = 0.55,
 
 	-- Temporary stylized details until custom grass/rock meshes exist.
 	GrassTuftCount = 260,
@@ -1006,7 +1007,7 @@ local function loadTreeTemplates()
 	end
 end
 
-local function createTree(position: Vector3): Instance
+local function createTree(position: Vector3, scaleMultiplier: number?): Instance
 	if #treeTemplates == 0 then
 		return createPlaceholderTree(position)
 	end
@@ -1025,9 +1026,11 @@ local function createTree(position: Vector3): Instance
 	end
 
 	local yRotation = CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
+	local treeScale = rng:NextNumber(CONFIG.ImportedTreeScaleMin, CONFIG.ImportedTreeScaleMax)
+		* (scaleMultiplier or 1)
 
 	if clone:IsA("Model") then
-		clone:ScaleTo(rng:NextNumber(CONFIG.ImportedTreeScaleMin, CONFIG.ImportedTreeScaleMax))
+		clone:ScaleTo(treeScale)
 
 		-- Place the bottom of the bounding box on the ground, regardless of
 		-- where the import put the pivot.
@@ -1151,10 +1154,16 @@ local function spawnForests(forestsFolder: Folder)
 		local treeCount = rng:NextInteger(CONFIG.TreesPerForestMin, CONFIG.TreesPerForestMax)
 
 		for _ = 1, treeCount do
-			-- Bias positions toward the cluster center so the forest core is dense
-			-- and the edge thins out naturally.
+			-- Bias positions strongly toward the cluster center so the forest
+			-- core is dense. Edge trees are intentionally smaller and sparser.
 			local angle = rng:NextNumber(0, math.pi * 2)
-			local offset = forestRadius * rng:NextNumber() ^ 0.7
+			local edgeFactor = rng:NextNumber() ^ 1.8
+			local offset = forestRadius * edgeFactor
+			local spawnChance = 1 - edgeFactor * 0.55
+			if rng:NextNumber() > spawnChance then
+				continue
+			end
+
 			local x = centerX + math.cos(angle) * offset
 			local z = centerZ + math.sin(angle) * offset
 
@@ -1163,7 +1172,8 @@ local function spawnForests(forestsFolder: Folder)
 			end
 
 			local y = getTerrainSurfaceYAt(x, z, groundHeightAt(x, z))
-			local tree = createTree(Vector3.new(x, y, z))
+			local scaleMultiplier = 1 - edgeFactor * (1 - CONFIG.ForestEdgeTreeScaleMultiplier)
+			local tree = createTree(Vector3.new(x, y, z), scaleMultiplier)
 			tree.Parent = forestsFolder
 		end
 
