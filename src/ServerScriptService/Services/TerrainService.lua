@@ -55,6 +55,8 @@ local CONFIG = {
 	RiverSampleStep = 4,
 	RiverMaxStraightLength = 18, -- About 5 meters; add a bend before the path reads as straight.
 	RiverShortBendAmplitude = 10,
+	BankSurfaceDepth = 4,
+	BankBedDepth = 2,
 
 	-- One gently rolling grass rise per meadow "compartment". The waterways
 	-- split the plateau into separate compartments; the hill height grows
@@ -306,12 +308,21 @@ local function layGravelBank(
 	groundY: number
 )
 	local bankTotalWidth = (halfWidth + bankWidth) * 2
+	local channelWidth = halfWidth * 2
 
-	-- Solid slate block: wider than the channel and reaching below the bed,
-	-- so the carved channel ends up with gravel around and underneath it.
+	-- Keep banks shallow. Deep overlapping slate blocks can create unnatural
+	-- shelves or accidental bridges where river samples overlap on curves.
 	terrain:FillBlock(
-		CFrame.new(x, (groundY + bedY - 2) / 2, z),
-		Vector3.new(bankTotalWidth, groundY - (bedY - 2), bankTotalWidth),
+		CFrame.new(x, groundY - CONFIG.BankSurfaceDepth / 2, z),
+		Vector3.new(bankTotalWidth, CONFIG.BankSurfaceDepth, bankTotalWidth),
+		Enum.Material.Slate
+	)
+
+	-- Keep a thin slate bed under the water channel without building tall
+	-- slate walls up through the terrain.
+	terrain:FillBlock(
+		CFrame.new(x, bedY - CONFIG.BankBedDepth / 2, z),
+		Vector3.new(channelWidth, CONFIG.BankBedDepth, channelWidth),
 		Enum.Material.Slate
 	)
 end
