@@ -100,11 +100,11 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Belegte Zellen fuer alle Spieler synchronisieren, nicht nur lokal nach eigener Platzierung.
 - [x] Beim Platzieren Terrain unter dem Gebaeude automatisch an die Modell-Unterseite anpassen, damit keine Luecken zwischen Boden und Gebaeude entstehen.
 - [ ] Spezial-TODO: Gebaeude sollen beim Platzieren eine einheitliche Bauhoehe bekommen; Terrain im Footprint serverseitig auf eine flache Plattform an Modell-Unterseite anpassen, damit alle platzierten Gebaeude auf demselben Level stehen und weder hoeher noch tiefer einsinken.
-- [ ] Terrain-Plattform fuer Gebaeude kleiner und weicher machen: keine sichtbaren grossen Huegel oder Plateaus um kleine Gebaeude, nur Modell-Unterseite sauber stuetzen und Kanten natuerlich auslaufen lassen.
+- [x] Terrain-Plattform fuer Gebaeude kleiner und weicher machen: keine sichtbaren grossen Huegel oder Plateaus um kleine Gebaeude, nur Modell-Unterseite sauber stuetzen und Kanten natuerlich auslaufen lassen.
 - [x] Platzierung nahe Pond-Pflanzen blockieren, damit Gebaeude nicht in Rohrkolben/Teichbepflanzung gebaut werden.
 - [x] Pond-Pflanzen analog zu Wiesen-Baeumen als Placement-Blocker registrieren, statt nur den Pond-Radius zu pruefen.
 - [x] Grasbueschel und hohe Grass-Flora im Gebaeude-Footprint entfernen oder vermeiden, damit platzierte Modelle nicht von Gras durchschnitten werden.
-- [ ] Bei erfolgreicher Platzierung reservierte Terrain-/Deko-Blocker im Footprint aktualisieren, damit spaetere Systeme keine alten Pflanzen/Details dort nutzen.
+- [x] Bei erfolgreicher Platzierung reservierte Terrain-/Deko-Blocker im Footprint aktualisieren, damit spaetere Systeme keine alten Pflanzen/Details dort nutzen.
 - [x] Echte Gebaeude-Models aus `ServerStorage/BuildingModels` nutzen.
 - [x] Shop-Footprint an quadratischen Modellboden anpassen, damit Preview und 3D-Modell sauber alignen.
 - [ ] Placeholder-Farbe/Material spaeter entfernen.

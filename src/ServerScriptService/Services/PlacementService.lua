@@ -24,8 +24,10 @@ local placementResultRemote: RemoteEvent
 local DEBUG_GRID = false
 local MAX_PLACE_DISTANCE = 80
 local MAX_GROUND_HEIGHT_DELTA = 1.5
-local PLATFORM_DEPTH = 8
-local PLATFORM_PADDING = 0.25
+local PLATFORM_CORE_DEPTH = 5
+local PLATFORM_EDGE_DEPTH = 2
+local PLATFORM_PADDING = 0.35
+local PLATFORM_EDGE_FADE = 1.75
 local VALID_ROTATIONS = {
 	[0] = true,
 	[90] = true,
@@ -298,6 +300,37 @@ local function scalePartToFootprint(part: BasePart, targetFootprintSize: Vector2
 	end
 end
 
+local function getPlatformFootprintSize(buildingId: string, buildingConfig, rotation: number): Vector2
+	local targetFootprintSize = getTargetFootprintSize(buildingConfig, rotation)
+	local buildingModels = ServerStorage:FindFirstChild("BuildingModels")
+	local sourceModel = buildingModels and buildingModels:FindFirstChild(buildingConfig.ModelName)
+
+	if not sourceModel then
+		return targetFootprintSize
+	end
+
+	local clone = sourceModel:Clone()
+	local platformSize = targetFootprintSize
+
+	if clone:IsA("Model") then
+		scaleModelToFootprint(clone, targetFootprintSize)
+		local _, boundsSize = clone:GetBoundingBox()
+		platformSize = Vector2.new(boundsSize.X, boundsSize.Z)
+	elseif clone:IsA("BasePart") then
+		scalePartToFootprint(clone, targetFootprintSize)
+		platformSize = Vector2.new(clone.Size.X, clone.Size.Z)
+	else
+		warn("[PlacementService] Unsupported building model for platform sizing:", buildingId)
+	end
+
+	clone:Destroy()
+
+	return Vector2.new(
+		math.clamp(platformSize.X + PLATFORM_PADDING * 2, Grid.TileSize, targetFootprintSize.X),
+		math.clamp(platformSize.Y + PLATFORM_PADDING * 2, Grid.TileSize, targetFootprintSize.Y)
+	)
+end
+
 local function pivotModelBottomTo(model: Model, targetPivot: CFrame)
 	local boundsCFrame, boundsSize = model:GetBoundingBox()
 	local pivotToBottom = model:GetPivot().Position.Y - (boundsCFrame.Position.Y - boundsSize.Y / 2)
@@ -391,34 +424,64 @@ local function clearGrassTuftsInCells(cells: { Vector2 })
 	end
 end
 
-local function flattenTerrainForBuilding(origin: Vector2, size: Vector2, rotation: number, platformY: number)
-	local terrain = Workspace.Terrain
-	local footprintSize = Grid.getFootprintSize(size, rotation)
-	local center = getBuildingCenterWorld(origin, size, rotation, platformY)
-	local width = footprintSize.X * Grid.TileSize + PLATFORM_PADDING * 2
-	local depth = footprintSize.Y * Grid.TileSize + PLATFORM_PADDING * 2
-
+local function fillPlatformPatch(
+	terrain: Terrain,
+	center: Vector3,
+	platformY: number,
+	width: number,
+	depth: number,
+	fillDepth: number
+)
 	terrain:FillBlock(
-		CFrame.new(center.X, platformY + PLATFORM_DEPTH / 2, center.Z),
-		Vector3.new(width, PLATFORM_DEPTH, depth),
+		CFrame.new(center.X, platformY + fillDepth / 2, center.Z),
+		Vector3.new(width, fillDepth, depth),
 		Enum.Material.Air
 	)
 
 	terrain:FillBlock(
-		CFrame.new(center.X, platformY - PLATFORM_DEPTH / 2, center.Z),
-		Vector3.new(width, PLATFORM_DEPTH, depth),
+		CFrame.new(center.X, platformY - fillDepth / 2, center.Z),
+		Vector3.new(width, fillDepth, depth),
 		Enum.Material.Grass
 	)
+end
+
+local function flattenTerrainForBuilding(
+	buildingId: string,
+	buildingConfig,
+	origin: Vector2,
+	rotation: number,
+	platformY: number
+)
+	local terrain = Workspace.Terrain
+	local center = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, platformY)
+	local platformSize = getPlatformFootprintSize(buildingId, buildingConfig, rotation)
+	local coreWidth = platformSize.X
+	local coreDepth = platformSize.Y
+	local edgeWidth = math.min(coreWidth + PLATFORM_EDGE_FADE * 2, getTargetFootprintSize(buildingConfig, rotation).X)
+	local edgeDepth = math.min(coreDepth + PLATFORM_EDGE_FADE * 2, getTargetFootprintSize(buildingConfig, rotation).Y)
+
+	fillPlatformPatch(terrain, center, platformY, edgeWidth, edgeDepth, PLATFORM_EDGE_DEPTH)
+	fillPlatformPatch(terrain, center, platformY, coreWidth, coreDepth, PLATFORM_CORE_DEPTH)
+end
+
+local function clearNatureBlockersInCells(cells: { Vector2 })
+	for _, cell in cells do
+		local world = Grid.gridToWorld(cell)
+		if TerrainService.ClearNatureBlockersNear then
+			TerrainService.ClearNatureBlockersNear(world.X, world.Z, Grid.TileSize / 2)
+		end
+	end
 end
 
 local function placeValidatedBuilding(buildingId: string, buildingConfig, origin: Vector2, rotation: number)
 	local occupiedByBuilding = Grid.getOccupiedCells(origin, buildingConfig.Size, rotation)
 	local platformY = getPlatformYForCells(occupiedByBuilding)
-	flattenTerrainForBuilding(origin, buildingConfig.Size, rotation, platformY)
+	flattenTerrainForBuilding(buildingId, buildingConfig, origin, rotation, platformY)
 
 	local centerWorld = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, platformY)
 	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, rotation)
 	clearGrassTuftsInCells(occupiedByBuilding)
+	clearNatureBlockersInCells(occupiedByBuilding)
 	buildingInstance.Parent = placedBuildingsFolder
 	markCellsOccupied(occupiedByBuilding)
 

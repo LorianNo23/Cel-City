@@ -34,8 +34,8 @@ Naechste Schritte:
 - Einheitliche Bauhoehe pro Placement-Footprint definieren. `[x] erste Version`
 - Terrain im Footprint serverseitig zu einer flachen Plattform formen. `[x] erste Version`
 - Gebaeude exakt auf die Modell-Unterseite bzw. Plattform setzen. `[x] erste Version`
-- Plattform-Footprint und Tiefe reduzieren bzw. an die sichtbare Modell-Unterseite koppeln.
-- Plattform-Kanten weich auslaufen lassen, damit keine kuenstlichen Huegel entstehen.
+- Plattform-Footprint und Tiefe reduzieren bzw. an die sichtbare Modell-Unterseite koppeln. `[x] erste Version`
+- Plattform-Kanten weich auslaufen lassen, damit keine kuenstlichen Huegel entstehen. `[x] erste Version`
 - Save/Restore beruecksichtigen, damit Plattformen nach Laden reproduzierbar sind.
 
 Erfolgskriterium:
@@ -122,6 +122,8 @@ Erfolgskriterium:
 - Pond-Pflanzen und Wiesen-Baeume als Placement-Blocker registriert.
 - Grasbueschel im Gebaeude-Footprint werden beim Platzieren entfernt.
 - Gebaeude-Footprints werden beim Platzieren zu einer flachen Terrain-Plattform geformt.
+- Gebaeude-Plattformen nutzen eine kleinere modellbasierte Kernflaeche mit flacherem Rand.
+- Reservierte Natur-Blocker werden nach erfolgreicher Platzierung im Footprint entfernt.
 - Baeume werden auf echte Terrain-Oberflaeche gesetzt.
 - Hill-Forests haben dichtere Zentren und kleinere/lockerere Raender.
 - Slate-Ufer werden als flache Oberflaechenschicht statt als tiefe massive Bloecke erzeugt.

@@ -251,6 +251,17 @@ function TerrainService.IsTreeArea(x: number, z: number, clearance: number?): bo
 	return false
 end
 
+function TerrainService.ClearNatureBlockersNear(x: number, z: number, radius: number)
+	local position = Vector2.new(x, z)
+
+	for index = #natureBlockers, 1, -1 do
+		local blocker = natureBlockers[index]
+		if (position - blocker.Position).Magnitude <= radius + blocker.Radius then
+			table.remove(natureBlockers, index)
+		end
+	end
+end
+
 local function fillGroundSlab(terrain: Terrain)
 	local half = totalHalfSize()
 	local size = Vector3.new(half * 2, CONFIG.GroundDepth, half * 2)
