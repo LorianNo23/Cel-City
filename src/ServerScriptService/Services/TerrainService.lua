@@ -127,9 +127,11 @@ local streamPoints: { Vector2 } = {}
 local pondCenter: Vector2? = nil
 local pondBlockRadius = 0
 
+-- Bright, slightly yellow-shifted greens for a soft low-poly meadow look
+-- (art reference: sunlit stylized hills with flat-shaded trees).
 local TERRAIN_COLORS = {
-	[Enum.Material.Grass] = Color3.fromRGB(94, 166, 82),
-	[Enum.Material.LeafyGrass] = Color3.fromRGB(64, 142, 75),
+	[Enum.Material.Grass] = Color3.fromRGB(126, 188, 92),
+	[Enum.Material.LeafyGrass] = Color3.fromRGB(98, 166, 84),
 	[Enum.Material.Ground] = Color3.fromRGB(123, 103, 71),
 	[Enum.Material.Rock] = Color3.fromRGB(92, 96, 98),
 	[Enum.Material.Slate] = Color3.fromRGB(118, 124, 124),
@@ -154,6 +156,21 @@ local function applyStylizedTerrainPalette(terrain: Terrain)
 			warn("[TerrainService] Could not set terrain material color:", material, err)
 		end
 	end
+
+	-- Animated grass blades on the Grass material give the meadow the soft
+	-- carpet look from the art reference. They take their color from the
+	-- material color above.
+	local success, err = pcall(function()
+		terrain.Decoration = true
+	end)
+	if not success then
+		warn("[TerrainService] Could not enable terrain grass decoration:", err)
+	end
+
+	-- GrassLength is a newer property; ignore quietly where it is missing.
+	pcall(function()
+		(terrain :: any).GrassLength = 0.5
+	end)
 end
 
 local function fractalNoise(x: number, z: number): number

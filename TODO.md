@@ -114,6 +114,11 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 - [ ] Gebaeudeplatzierung auf Strassen blockieren.
 - [ ] Spaeter Verbindung/Adjacency fuer Stadtlogik nutzen.
 
+## Abgeschlossen in `feature/grass-style`
+
+- [x] Grasfarben heller und gelbgruener machen (Low-Poly-Wiesen-Referenz).
+- [x] Animierte Gras-Halme aktivieren (`Terrain.Decoration`, Laenge 0.5).
+
 ## Cel-Shading / Visual Polish
 
 - [x] Erste Terrain-Materialpalette definieren.
