@@ -50,11 +50,12 @@ local CONFIG = {
 	RiverBankWidth = 8, -- Gravel bank on each side of the river.
 	RiverDepth = 6,
 	RiverWaterLevel = -1.5,
-	RiverMeander = 140, -- Maximum sideways offset of the river path.
-	RiverNoiseScale = 1 / 220,
+	RiverMeander = 140, -- Maximum sideways offset of the slow river wander.
+	RiverNoiseScale = 1 / 400, -- Lower = slower, gentler large-scale wander (so it never builds a long straight diagonal).
 	RiverSampleStep = 4,
-	RiverMaxStraightLength = 18, -- About 5 meters; add a bend before the path reads as straight.
-	RiverShortBendAmplitude = 10,
+	RiverMaxStraightLength = 18, -- ~5 m; the river flips its bend within this, so no stretch reads as straight.
+	RiverBendAmplitude = 14, -- Sideways size of the steady bends layered on top of the wander.
+	RiverBendIrregularity = 0.4, -- Noise variation of each bend's size and phase (0 = clean sine).
 	BankSurfaceDepth = 4,
 	BankBedDepth = 2,
 
@@ -387,25 +388,33 @@ end
 
 local function generateRiverPath()
 	local half = totalHalfSize()
-	local seedPhase = SEED * 0.017
 	local minRiverX = math.huge
 	local maxRiverX = -math.huge
 
+	-- The river path is the sum of two parts:
+	--   * a slow, large-scale wander (noise) that decides where the river sits,
+	--   * a steady bend that reverses direction every RiverMaxStraightLength
+	--     studs (~5 m), so the silhouette never reads as a long straight line.
+	-- The wander is kept gentle (low RiverNoiseScale) so its slope can never
+	-- out-pull the bend; that way the bend always wins and the river keeps
+	-- curving back. Per-bend noise varies each bend's amplitude and phase so
+	-- the meander looks irregular instead of a mechanical sine. The bend stays
+	-- small on purpose: the channel is carved per z-sample, so a too-sharp turn
+	-- would move x faster than the water cells overlap and break the river into
+	-- disconnected pools.
+	local bendWavelength = CONFIG.RiverMaxStraightLength * 2
+
 	for z = -half, half, CONFIG.RiverSampleStep do
-		local noiseValue = math.noise(z * CONFIG.RiverNoiseScale, 1000, SEED)
-		local broadMeander = noiseValue * 2 * CONFIG.RiverMeander
+		local wander = math.noise(z * CONFIG.RiverNoiseScale, 0, SEED) * 2 * CONFIG.RiverMeander
 
-		-- The broad noise can occasionally look almost straight over longer
-		-- sections. A small seeded bend with an about-5m wavelength keeps the
-		-- silhouette moving without overpowering the main river shape.
-		local shortBend = math.sin((z / CONFIG.RiverMaxStraightLength) * math.pi + seedPhase)
-			* CONFIG.RiverShortBendAmplitude
+		-- Drifts slowly over the span of a bend, so each bend has its own size
+		-- and a little phase offset while staying smooth between samples.
+		local bendNoise = math.noise(z / bendWavelength, SEED * 0.01)
+		local amplitude = CONFIG.RiverBendAmplitude * (1 + CONFIG.RiverBendIrregularity * bendNoise)
+		local phase = (z / bendWavelength) * 2 * math.pi + CONFIG.RiverBendIrregularity * bendNoise
+		local bend = math.sin(phase) * amplitude
 
-		local riverX = math.clamp(
-			broadMeander + shortBend,
-			-CONFIG.RiverMeander,
-			CONFIG.RiverMeander
-		)
+		local riverX = math.clamp(wander + bend, -CONFIG.RiverMeander, CONFIG.RiverMeander)
 		riverPathX[math.floor(z / CONFIG.RiverSampleStep)] = riverX
 		minRiverX = math.min(minRiverX, riverX)
 		maxRiverX = math.max(maxRiverX, riverX)
