@@ -115,6 +115,11 @@ local CONFIG = {
 	-- Temporary stylized details until custom grass/rock meshes exist.
 	GrassTuftCount = 260,
 	GrassTuftMinDistanceFromPlateau = 24,
+
+	-- Debug helpers, disabled for normal play. Turn this on when checking
+	-- bad seeds in Studio; markers are visual-only parts under GeneratedMap.
+	DebugWaterPaths = false,
+	DebugPathMarkerStep = 24,
 }
 
 -- Forests and details use their own unseeded RNG, so they stay random even
@@ -126,6 +131,7 @@ local riverPathX: { [number]: number } = {}
 
 -- Carved stream sample points, used to keep trees out of the water.
 local streamPoints: { Vector2 } = {}
+local debugStreamPaths: { { Vector2 } } = {}
 
 -- Center and blocked radius (pond + dirt shore) of the generated pond, so
 -- IsWaterArea also keeps buildings out of the pond.
@@ -469,11 +475,64 @@ local function computeStreamPaths(): { { Vector2 } }
 	return paths
 end
 
+local function createDebugPathMarker(parent: Folder, name: string, position: Vector3, color: Color3)
+	local marker = Instance.new("Part")
+	marker.Name = name
+	marker.Anchored = true
+	marker.CanCollide = false
+	marker.CanQuery = false
+	marker.CanTouch = false
+	marker.Transparency = 0.25
+	marker.Material = Enum.Material.Neon
+	marker.Color = color
+	marker.Shape = Enum.PartType.Ball
+	marker.Size = Vector3.new(2.5, 2.5, 2.5)
+	marker.Position = position
+	marker.Parent = parent
+end
+
+local function createWaterPathDebugOverlay(mapFolder: Folder)
+	if not CONFIG.DebugWaterPaths then
+		return
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = "DebugWaterPaths"
+	folder.Parent = mapFolder
+
+	local half = totalHalfSize()
+	local riverStep = math.max(CONFIG.DebugPathMarkerStep, CONFIG.RiverSampleStep)
+	for z = -half, half, riverStep do
+		local x = TerrainService.GetRiverXAt(z)
+		local y = groundHeightAt(x, z) + 3
+		createDebugPathMarker(folder, "RiverPath", Vector3.new(x, y, z), Color3.fromRGB(55, 170, 255))
+	end
+
+	for streamIndex, path in debugStreamPaths do
+		for pointIndex, point in path do
+			if pointIndex % math.max(1, math.floor(CONFIG.DebugPathMarkerStep / CONFIG.StreamStepSize)) ~= 0 then
+				continue
+			end
+
+			local y = groundHeightAt(point.X, point.Y) + 3
+			createDebugPathMarker(
+				folder,
+				`StreamPath{streamIndex}`,
+				Vector3.new(point.X, y, point.Y),
+				Color3.fromRGB(255, 210, 80)
+			)
+		end
+	end
+
+	logStep("Debug water path overlay created")
+end
+
 -- Pass 1: lay every gravel bank (river and streams).
 -- Pass 2: carve every channel and fill it with water.
 local function generateWater(terrain: Terrain)
 	local half = totalHalfSize()
 	local streamPaths = computeStreamPaths()
+	debugStreamPaths = streamPaths
 
 	for z = -half, half, CONFIG.RiverSampleStep do
 		local x = TerrainService.GetRiverXAt(z)
@@ -1309,7 +1368,13 @@ function TerrainService.Init()
 	local terrain = Workspace.Terrain
 
 	logStep(`Generation started with seed {SEED}`)
+	table.clear(riverPathX)
+	table.clear(streamPoints)
+	table.clear(debugStreamPaths)
 	table.clear(natureBlockers)
+	compartmentsCache = nil
+	pondCenter = nil
+	pondBlockRadius = 0
 	loadTreeTemplates()
 
 	-- NOTE: This wipes any terrain painted in the Studio editor.
@@ -1332,6 +1397,10 @@ function TerrainService.Init()
 
 	runGenerationStep("water", function()
 		generateWater(terrain)
+	end)
+
+	runOptionalGenerationStep("water path debug overlay", function()
+		createWaterPathDebugOverlay(mapFolder)
 	end)
 
 	runGenerationStep("plateau hills", function()
