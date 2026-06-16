@@ -19,6 +19,18 @@ local Buildings = {
 		ModelName = "CelCityShop1",
 		Size = Vector2.new(2, 2),
 	},
+
+	PlaygroundFootball = {
+		DisplayName = "Test Ball",
+		Cost = 25,
+		ModelName = "football",
+		Size = Vector2.new(1, 1),
+		IsPhysicsObject = true,
+		IsPlaygroundOnly = true,
+		SkipTerrainPlatform = true,
+		SkipOccupancy = true,
+		SkipSave = true,
+	},
 }
 
 return Buildings

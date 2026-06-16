@@ -284,7 +284,7 @@ local function createBuildingSelectionGui()
 	panel.Name = "Panel"
 	panel.AnchorPoint = Vector2.new(0, 1)
 	panel.Position = UDim2.new(0, 24, 1, -24)
-	panel.Size = UDim2.fromOffset(320, 76)
+	panel.Size = UDim2.fromOffset(470, 76)
 	panel.BackgroundColor3 = Color3.fromRGB(25, 27, 31)
 	panel.BackgroundTransparency = 0.08
 	panel.BorderSizePixel = 0

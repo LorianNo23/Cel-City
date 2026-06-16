@@ -123,6 +123,7 @@ Diese Liste beschreibt sinnvolle naechste Schritte fuer Cel-City. Sie ist bewuss
 
 ## Content
 
+- [x] Playground-Testobjekt `PlaygroundFootball` aus `football.glb` als kauf-/platzierbares Physics-Objekt einbauen; nicht als finalen Content behandeln.
 - [ ] Einfaches House-Model bauen.
 - [ ] Einfaches Shop-Model bauen.
 - [ ] Building Config um Kategorie, Beschreibung und IconName erweitern.

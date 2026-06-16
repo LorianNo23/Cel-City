@@ -349,6 +349,24 @@ local function anchorBuildingInstance(instance: Instance)
 	end
 end
 
+local function enablePhysicsForInstance(instance: Instance)
+	if instance:IsA("BasePart") then
+		instance.Anchored = false
+		instance.CanCollide = true
+		instance.CanQuery = true
+		instance.CanTouch = true
+	end
+
+	for _, descendant in instance:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = false
+			descendant.CanCollide = true
+			descendant.CanQuery = true
+			descendant.CanTouch = true
+		end
+	end
+end
+
 local function createBuildingInstance(buildingId: string, buildingConfig, centerWorld: Vector3, rotation: number): Instance
 	local buildingModels = ServerStorage:FindFirstChild("BuildingModels")
 	local sourceModel = buildingModels and buildingModels:FindFirstChild(buildingConfig.ModelName)
@@ -357,7 +375,9 @@ local function createBuildingInstance(buildingId: string, buildingConfig, center
 	if sourceModel then
 		local clone = sourceModel:Clone()
 		local targetFootprintSize = getTargetFootprintSize(buildingConfig, rotation)
-		anchorBuildingInstance(clone)
+		if not buildingConfig.IsPhysicsObject then
+			anchorBuildingInstance(clone)
+		end
 
 		if clone:IsA("Model") then
 			scaleModelToFootprint(clone, targetFootprintSize)
@@ -372,6 +392,10 @@ local function createBuildingInstance(buildingId: string, buildingConfig, center
 		end
 
 		clone.Name = buildingId
+		if buildingConfig.IsPhysicsObject then
+			enablePhysicsForInstance(clone)
+		end
+
 		return clone
 	end
 
@@ -476,14 +500,18 @@ end
 local function placeValidatedBuilding(buildingId: string, buildingConfig, origin: Vector2, rotation: number)
 	local occupiedByBuilding = Grid.getOccupiedCells(origin, buildingConfig.Size, rotation)
 	local platformY = getPlatformYForCells(occupiedByBuilding)
-	flattenTerrainForBuilding(buildingId, buildingConfig, origin, rotation, platformY)
+	if not buildingConfig.SkipTerrainPlatform then
+		flattenTerrainForBuilding(buildingId, buildingConfig, origin, rotation, platformY)
+	end
 
 	local centerWorld = getBuildingCenterWorld(origin, buildingConfig.Size, rotation, platformY)
 	local buildingInstance = createBuildingInstance(buildingId, buildingConfig, centerWorld, rotation)
 	clearGrassTuftsInCells(occupiedByBuilding)
 	clearNatureBlockersInCells(occupiedByBuilding)
 	buildingInstance.Parent = placedBuildingsFolder
-	markCellsOccupied(occupiedByBuilding)
+	if not buildingConfig.SkipOccupancy then
+		markCellsOccupied(occupiedByBuilding)
+	end
 
 	return occupiedByBuilding, centerWorld
 end
@@ -559,7 +587,7 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 	end
 
 	-- TODO: Collision - add checks for roads and reserved map areas.
-	if not areCellsFree(occupiedByBuilding) then
+	if not buildingConfig.SkipOccupancy and not areCellsFree(occupiedByBuilding) then
 		warn("[PlacementService] Grid cells are already occupied for", buildingId)
 		sendPlacementResult(player, false, "Occupied", occupiedByBuilding)
 		return
@@ -574,8 +602,15 @@ function PlacementService.RequestPlaceBuilding(player: Player, buildingId: strin
 
 	local _, centerWorld = placeValidatedBuilding(buildingId, buildingConfig, origin, requestedRotation)
 	EconomyService.Spend(player, cost)
-	SaveService.AddPlacedBuilding(player, buildingId, origin, requestedRotation)
-	sendPlacementResult(player, true, "Placed", occupiedByBuilding)
+	if not buildingConfig.SkipSave then
+		SaveService.AddPlacedBuilding(player, buildingId, origin, requestedRotation)
+	end
+	sendPlacementResult(
+		player,
+		true,
+		"Placed",
+		if buildingConfig.SkipOccupancy then {} else occupiedByBuilding
+	)
 
 	print(
 		"[PlacementService]",
@@ -620,7 +655,7 @@ function PlacementService.RestoreBuilding(buildingId: string, origin: Vector2, r
 		return false
 	end
 
-	if not areCellsFree(occupiedByBuilding) then
+	if not buildingConfig.SkipOccupancy and not areCellsFree(occupiedByBuilding) then
 		warn("[PlacementService] Cannot restore building on occupied cells:", buildingId)
 		return false
 	end
